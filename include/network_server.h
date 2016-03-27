@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globals.h"
+#include "cache.h"
 
 class NetworkServer {
     public:

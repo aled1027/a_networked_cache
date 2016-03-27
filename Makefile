@@ -164,6 +164,96 @@ run_server/fast:
 .PHONY : run_server/fast
 
 # target to build an object file
+src/cache.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache.o
+.PHONY : src/cache.o
+
+# target to preprocess a source file
+src/cache.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache.i
+.PHONY : src/cache.i
+
+# target to generate assembly for a file
+src/cache.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache.s
+.PHONY : src/cache.s
+
+# target to build an object file
+src/cache_tests.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache_tests.o
+.PHONY : src/cache_tests.o
+
+# target to preprocess a source file
+src/cache_tests.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache_tests.i
+.PHONY : src/cache_tests.i
+
+# target to generate assembly for a file
+src/cache_tests.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/cache_tests.s
+.PHONY : src/cache_tests.s
+
+# target to build an object file
+src/dbLL.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL.o
+.PHONY : src/dbLL.o
+
+# target to preprocess a source file
+src/dbLL.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL.i
+.PHONY : src/dbLL.i
+
+# target to generate assembly for a file
+src/dbLL.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL.s
+.PHONY : src/dbLL.s
+
+# target to build an object file
+src/dbLL_tests.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL_tests.o
+.PHONY : src/dbLL_tests.o
+
+# target to preprocess a source file
+src/dbLL_tests.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL_tests.i
+.PHONY : src/dbLL_tests.i
+
+# target to generate assembly for a file
+src/dbLL_tests.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/dbLL_tests.s
+.PHONY : src/dbLL_tests.s
+
+# target to build an object file
+src/evict.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict.o
+.PHONY : src/evict.o
+
+# target to preprocess a source file
+src/evict.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict.i
+.PHONY : src/evict.i
+
+# target to generate assembly for a file
+src/evict.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict.s
+.PHONY : src/evict.s
+
+# target to build an object file
+src/evict_tests.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict_tests.o
+.PHONY : src/evict_tests.o
+
+# target to preprocess a source file
+src/evict_tests.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict_tests.i
+.PHONY : src/evict_tests.i
+
+# target to generate assembly for a file
+src/evict_tests.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/evict_tests.s
+.PHONY : src/evict_tests.s
+
+# target to build an object file
 src/main.o:
 	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/main.o
 .PHONY : src/main.o
@@ -178,6 +268,21 @@ src/main.s:
 	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/main.s
 .PHONY : src/main.s
 
+# target to build an object file
+src/node.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/node.o
+.PHONY : src/node.o
+
+# target to preprocess a source file
+src/node.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/node.i
+.PHONY : src/node.i
+
+# target to generate assembly for a file
+src/node.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/node.s
+.PHONY : src/node.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -191,9 +296,30 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... run_client"
 	@echo "... run_server"
+	@echo "... src/cache.o"
+	@echo "... src/cache.i"
+	@echo "... src/cache.s"
+	@echo "... src/cache_tests.o"
+	@echo "... src/cache_tests.i"
+	@echo "... src/cache_tests.s"
+	@echo "... src/dbLL.o"
+	@echo "... src/dbLL.i"
+	@echo "... src/dbLL.s"
+	@echo "... src/dbLL_tests.o"
+	@echo "... src/dbLL_tests.i"
+	@echo "... src/dbLL_tests.s"
+	@echo "... src/evict.o"
+	@echo "... src/evict.i"
+	@echo "... src/evict.s"
+	@echo "... src/evict_tests.o"
+	@echo "... src/evict_tests.i"
+	@echo "... src/evict_tests.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/node.o"
+	@echo "... src/node.i"
+	@echo "... src/node.s"
 .PHONY : help
 
 

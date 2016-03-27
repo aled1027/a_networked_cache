@@ -14,17 +14,28 @@
 
 #include "network_server.h"
 #include "network_client.h"
+#include "cache_tests.h"
 
-int main(int argc, char* argv[])
-{
+void client_test() {
+    HTTPClient c;
+    c.request("GET", "/3", "version");
+}
+
+void server_test() {
+    HTTPServer s;
+    s.listen();
+}
+int main(int argc, char* argv[]) {
+    cache_tests();
+
     assert(argc == 2);
     std::string client_str("client");
     if (client_str.compare(argv[1]) == 0) {
-        HTTPClient c;
-        c.request("GET", "/3", "version");
+        client_test();
     } else {
-        HTTPServer s;
-        s.listen();
+        server_test();
     }
+
+    return 0;    
 
 }
