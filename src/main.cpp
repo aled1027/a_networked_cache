@@ -23,13 +23,11 @@ int main(int argc, char* argv[])
     assert(argc == 2);
     std::string client_str("client");
     if (client_str.compare(argv[1]) == 0) {
-        boost::asio::io_service io_service;
-        NetworkClient c(io_service);
-        c.send("GET /path/to/file/index.html HTTP/1.0\n");
+        HTTPClient c;
+        c.request("GET", "/3", "version");
     } else {
-        boost::asio::io_service io_service;
-        NetworkServer s(io_service);
-        s.receive();
+        HTTPServer s;
+        s.listen();
     }
 
 }

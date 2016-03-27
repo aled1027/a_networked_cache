@@ -7,6 +7,7 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 - boost/asio
 
 ## Resources
+- https://www.jmarshall.com/easy/http/#whatis
 - https://github.com/eidheim/Simple-Web-Server/blob/master/http_examples.cpp
 - http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/examples/cpp11_examples.html
 - http://stackoverflow.com/questions/15290386/using-boost-asio-with-cmake
