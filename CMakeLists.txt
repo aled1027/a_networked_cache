@@ -14,6 +14,7 @@ add_compile_options(-std=c++14)
 
 add_executable(a_networked_cache src/main.cpp)
 
+# run commands
 add_custom_target(run_client
     COMMAND ./a_networked_cache client
     DEPENDS a_networked_cache
@@ -22,6 +23,19 @@ add_custom_target(run_client
 
 add_custom_target(run_server
     COMMAND ./a_networked_cache server
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+)
+
+# gdb commands
+add_custom_target(gdb_client
+    COMMAND gdb --args ./a_networked_cache client
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+)
+
+add_custom_target(gdb_server
+    COMMAND gdb --args ./a_networked_cache server
     DEPENDS a_networked_cache
     WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
 )

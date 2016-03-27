@@ -27,11 +27,12 @@ class NetworkClient
         }
 
         void send(const std::string& message) {
+            debug("NetworkClient::send");
             socket.send(boost::asio::buffer(message));
         }
 
         void receive() {
-            debug("Client::receive");
+            debug("NetworkClient::receive");
             try {
                 std::array<char, 40> buf;
                 boost::system::error_code error;

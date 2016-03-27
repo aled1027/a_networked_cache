@@ -112,6 +112,32 @@ a_networked_cache/fast:
 .PHONY : a_networked_cache/fast
 
 #=============================================================================
+# Target rules for targets named gdb_client
+
+# Build rule for target.
+gdb_client: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 gdb_client
+.PHONY : gdb_client
+
+# fast build rule for target.
+gdb_client/fast:
+	$(MAKE) -f CMakeFiles/gdb_client.dir/build.make CMakeFiles/gdb_client.dir/build
+.PHONY : gdb_client/fast
+
+#=============================================================================
+# Target rules for targets named gdb_server
+
+# Build rule for target.
+gdb_server: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 gdb_server
+.PHONY : gdb_server
+
+# fast build rule for target.
+gdb_server/fast:
+	$(MAKE) -f CMakeFiles/gdb_server.dir/build.make CMakeFiles/gdb_server.dir/build
+.PHONY : gdb_server/fast
+
+#=============================================================================
 # Target rules for targets named run_client
 
 # Build rule for target.
@@ -160,6 +186,8 @@ help:
 	@echo "... depend"
 	@echo "... a_networked_cache"
 	@echo "... edit_cache"
+	@echo "... gdb_client"
+	@echo "... gdb_server"
 	@echo "... rebuild_cache"
 	@echo "... run_client"
 	@echo "... run_server"

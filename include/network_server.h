@@ -19,6 +19,7 @@ class NetworkServer
         }
 
         void receive() {
+            debug("NetworkServer::receive");
             boost::asio::streambuf sb;
             boost::system::error_code ec;
             while (boost::asio::read(socket, sb, ec)) {
@@ -27,7 +28,7 @@ class NetworkServer
         }
 
         void send(const std::string& message) {
-            debug("Server::send");
+            debug("NetworkServer::send");
             try {
                 //acceptor.accept(socket); // wait and listen
                 boost::asio::write(socket, boost::asio::buffer(message));
