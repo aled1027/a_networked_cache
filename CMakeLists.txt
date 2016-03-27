@@ -7,11 +7,25 @@ project (a_networked_cache)
 #find_package(Boost 1.54.0 COMPONENTS system REQUIRED)
 find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context filesystem date_time REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
+include_directories ("${PROJECT_SOURCE_DIR}/include")
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 #add_compile_options(-pthread)
 
 add_executable(a_networked_cache src/main.cpp)
+
+add_custom_target(run_client
+    COMMAND ./a_networked_cache client
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+)
+
+add_custom_target(run_server
+    COMMAND ./a_networked_cache server
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+)
+
 target_link_libraries(a_networked_cache
     ${Boost_LIBRARIES})
 

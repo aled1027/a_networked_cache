@@ -111,6 +111,32 @@ a_networked_cache/fast:
 	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/build
 .PHONY : a_networked_cache/fast
 
+#=============================================================================
+# Target rules for targets named run_client
+
+# Build rule for target.
+run_client: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 run_client
+.PHONY : run_client
+
+# fast build rule for target.
+run_client/fast:
+	$(MAKE) -f CMakeFiles/run_client.dir/build.make CMakeFiles/run_client.dir/build
+.PHONY : run_client/fast
+
+#=============================================================================
+# Target rules for targets named run_server
+
+# Build rule for target.
+run_server: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 run_server
+.PHONY : run_server
+
+# fast build rule for target.
+run_server/fast:
+	$(MAKE) -f CMakeFiles/run_server.dir/build.make CMakeFiles/run_server.dir/build
+.PHONY : run_server/fast
+
 # target to build an object file
 src/main.o:
 	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/main.o
@@ -135,6 +161,8 @@ help:
 	@echo "... a_networked_cache"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... run_client"
+	@echo "... run_server"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
