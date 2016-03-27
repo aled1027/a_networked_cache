@@ -1,6 +1,13 @@
 # Let's network
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
+## Getting started
+1. Install cmake
+2. `cmake .`
+3. `make`
+4. In one terminal, `make run_server`
+5. In another terminal, `make run_client`
+
 ## New things we are trying
 - cplusplus
 - cmake
