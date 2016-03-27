@@ -23,19 +23,13 @@ int main(int argc, char* argv[])
     assert(argc == 2);
     std::string client_str("client");
     if (client_str.compare(argv[1]) == 0) {
-        NetworkClient c;
-        std::string message("Hello from Client");
-        std::cout << "------------------" << std::endl;
-        c.send(message);
-        std::cout << "------------------" << std::endl;
-        //c.receive();
+        boost::asio::io_service io_service;
+        NetworkClient c(io_service);
+        c.send("GET /path/to/file/index.html HTTP/1.0\n");
     } else {
-        NetworkServer s;
-        std::string message("Hello from server");
-        std::cout << "------------------" << std::endl;
+        boost::asio::io_service io_service;
+        NetworkServer s(io_service);
         s.receive();
-        std::cout << "------------------" << std::endl;
-        s.send(message);
     }
 
 }

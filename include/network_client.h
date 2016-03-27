@@ -5,23 +5,22 @@
 class NetworkClient 
 {
     public:
-        boost::asio::io_service io;
-        boost::asio::ip::tcp::resolver resolver;
+        boost::asio::ip::tcp::resolver resolver; // make io_service use tcp
         boost::asio::ip::tcp::socket socket;
 
-        NetworkClient() :
-            resolver(io),
-            socket(io)
-    {
-        debug("NetworkClient::NetworkClient");
-        try {
+        NetworkClient(boost::asio::io_service& io) : resolver(io), socket(io) {
+            debug("NetworkClient::NetworkClient");
             boost::asio::ip::tcp::resolver::iterator endpoint = resolver.resolve(
                     boost::asio::ip::tcp::resolver::query(globals::HOST, globals::HELLO_PORT_STR));
-            boost::asio::connect(socket, endpoint);
-        } catch(std::exception& e) {
-            std::cerr << e.what() << std::endl;
+
+            boost::system::error_code error = boost::asio::error::host_not_found;
+            socket.connect(*endpoint, error);
+
+            if (error) {
+                throw boost::system::system_error(error);
+            }
         }
-    }
+
         ~NetworkClient() {
             debug("NetworkClient::~NetworkClient");
         }
@@ -33,21 +32,11 @@ class NetworkClient
 
         void receive() {
             debug("NetworkClient::receive");
-            try {
-                std::array<char, 40> buf;
-                boost::system::error_code error;
-                size_t len = socket.read_some(boost::asio::buffer(buf), error);
-
-                if(error == boost::asio::error::eof)
-                    return; // connection closed by peer?
-
-                else if(error)
-                    throw boost::system::system_error(error);
-                std::cout.write(buf.data(), len);
-                std::cout << std::endl;
-            } catch(std::exception& e) {
-                std::cerr << e.what() << std::endl;
-            }
+            boost::asio::streambuf sb;
+            boost::system::error_code ec;
+            std::stringstream ss;
+            boost::asio::read_until(socket, sb, "\n", ec);
+            std::cout << &sb;
         }
 };
 
