@@ -1,9 +1,8 @@
 #pragma once
 
-#define DEBUG
+//#define DEBUG
 
-void debug(std::string s) 
-{
+void debug(std::string s) {
 #ifdef DEBUG
     std::cout << s << std::endl;
 #endif

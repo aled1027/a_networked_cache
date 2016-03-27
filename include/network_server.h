@@ -1,13 +1,8 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <algorithm>
-#include <iterator>
+#include "globals.h"
 
-class NetworkServer 
-{
+class NetworkServer {
     public:
         boost::asio::io_service io;
         boost::asio::ip::tcp::socket socket;
@@ -48,8 +43,7 @@ class NetworkServer
         }
 };
 
-class HTTPServer
-{
+class HTTPServer {
     public:
         NetworkServer network_server;
         HTTPServer() {

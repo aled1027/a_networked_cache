@@ -1,9 +1,8 @@
 #pragma once
 
-#include <boost/asio.hpp>
+#include "globals.h"
 
-class NetworkClient 
-{
+class NetworkClient {
     public:
         boost::asio::io_service io;
         boost::asio::ip::tcp::resolver resolver; // make io_service use tcp

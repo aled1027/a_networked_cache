@@ -10,11 +10,8 @@
  * http://www.boost.org/doc/libs/1_35_0/doc/html/boost_asio/tutorial/tutdaytime1.html
  */
 
-#include <iostream>
-#include <exception>
-#include <array>
 #include <boost/asio.hpp>
-#include "globals.h"
+
 #include "network_server.h"
 #include "network_client.h"
 
