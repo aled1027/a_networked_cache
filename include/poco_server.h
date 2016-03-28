@@ -6,72 +6,101 @@
 #include <Poco/Net/HTTPServerRequest.h>
 #include <Poco/Net/HTTPServerResponse.h>
 #include <Poco/Util/ServerApplication.h>
+#include <Poco/Process.h>
 #include <iostream>
 #include <string>
 #include <vector>
+#include "cache.h"
 
 using namespace Poco::Net;
 using namespace Poco::Util;
 using namespace std;
 
-class MyRequestHandler : public HTTPRequestHandler
-{
-    public:
-        virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp)
-        {
-            resp.setStatus(HTTPResponse::HTTP_OK);
-            resp.setContentType("text/html");
-
-            ostream& out = resp.send();
-            out << "<h1>Hello world!</h1>"
-                << "<p>Count: "  << ++count         << "</p>"
-                << "<p>Host: "   << req.getHost()   << "</p>"
-                << "<p>Method: " << req.getMethod() << "</p>"
-                << "<p>URI: "    << req.getURI()    << "</p>";
-            out.flush();
-
-            cout << endl
-                << "Response sent for count=" << count
-                << " and URI=" << req.getURI() << endl;
-        }
-
-    private:
-        static int count;
+class MyGetHandler : public HTTPRequestHandler {
+public:
+    virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp) {
+        resp.setStatus(HTTPResponse::HTTP_OK);
+        resp.setContentType("text/html");
+        ostream& out = resp.send();
+        out << "<h1>"
+            << req.getURI()
+            << "<h1>";
+        out.flush();
+    }
 };
 
-int MyRequestHandler::count = 0;
+class MyRequestHandler : public HTTPRequestHandler
+{
+    cache_t cache = NULL;
+    public:
+    virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp)
+    {
+        if (req.getMethod().compare("POST") == 0) {
+            post(req, resp);
+        } else {
+            ostream& out = resp.send();
+            out << "<h1>Undetected!</h1>";
+            out.flush();
+        }
+    }
+
+    void post(HTTPServerRequest& req, HTTPServerResponse &resp) {
+        // parse URI (the body). Should be "/shutdown"
+        std::string uri = req.getURI();
+
+        if (uri.compare("/shutdown") == 0) {
+            resp.setStatus(HTTPResponse::HTTP_OK);
+            resp.setContentType("text/html");
+            ostream& out = resp.send();
+            out << "<h1>POST</h1>";
+            out.flush();
+            //terminate();
+            Poco::Process::requestTermination(Poco::Process::id());
+
+        } else {
+            error(req, resp);
+        }
+    }
+
+    void error(HTTPServerRequest& req, HTTPServerResponse &resp) {
+        resp.setStatus(HTTPResponse::HTTP_OK);
+        resp.setContentType("text/html");
+    }
+};
 
 class MyRequestHandlerFactory : public HTTPRequestHandlerFactory
 {
     public:
-        virtual HTTPRequestHandler* createRequestHandler(const HTTPServerRequest &)
+        virtual HTTPRequestHandler* createRequestHandler(const HTTPServerRequest &request)
         {
-            return new MyRequestHandler;
+            if (request.getMethod() == "GET") {
+                std::cout << "in here" << std::endl;
+                return new MyGetHandler;
+            } else if (request.getMethod() == "POST") {
+                return new MyRequestHandler; 
+            } else {
+                return new MyRequestHandler; 
+            }
         }
 };
 
-class MyServerApp : public ServerApplication
+class Server : public ServerApplication
 {
     protected:
         int main(const vector<string> &)
         {
             std::cout << "in protect main" << std::endl;
             HTTPServer s(new MyRequestHandlerFactory, ServerSocket(9090), new HTTPServerParams);
-
             s.start();
-            cout << endl << "Server started" << endl;
-
             waitForTerminationRequest();  // wait for CTRL-C or kill
-
-            cout << endl << "Shutting down..." << endl;
             s.stop();
-
             return Application::EXIT_OK;
         }
+
 };
 
 
 void poco_server_go(int argc, char *argv[]) {
-    MyServerApp app;
-    app.run(argc, argv);
+    Server s;
+    s.run(argc, argv);
 }

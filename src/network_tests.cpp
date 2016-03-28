@@ -1,6 +1,7 @@
 
 #include <iostream>
-#include "network_server.h"
+//#include "network_server.h"
+#include "poco_server.h"
 #include "network_client.h"
 #include "network_tests.h"
 
@@ -11,37 +12,39 @@ void test_shutdown(bool is_client) {
         HTTPClient c;
         c.shutdown();
     } else {
-        HTTPServer s;
-        s.listen();
+        Server s;
+        char *argv[1] = {"name"};
+        s.run(1, argv);
     }
 }
 
-void test_put(bool is_client) {
-    std::cout << "Running put test" << std::endl;
-    if (is_client) {
-        HTTPClient c;
-        //c.request("PUT", "/3/999", "HTTP/1.1");
-        //c.request("POST", "/shutdown", "HTTP/1.1");
-    } else {
-        HTTPServer s;
-        s.listen();
-    }
-}
+//void test_put(bool is_client) {
+//    std::cout << "Running put test" << std::endl;
+//    if (is_client) {
+//        HTTPClient c;
+//        //c.request("PUT", "/3/999", "HTTP/1.1");
+//        //c.request("POST", "/shutdown", "HTTP/1.1");
+//    } else {
+//        HTTPServer s;
+//        s.listen();
+//    }
+//}
 
-void test_get(bool is_client) {
-    std::cout << "Running get test" << std::endl;
-    if (is_client) {
-        HTTPClient c;
-        c.set("3", "999");
-        c.get("3");
-        c.shutdown();
-    } else {
-        HTTPServer s;
-        s.listen();
-    }
-}
+//void test_get(bool is_client) {
+//    std::cout << "Running get test" << std::endl;
+//    if (is_client) {
+//        HTTPClient c;
+//        c.set("3", "999");
+//        c.get("3");
+//        c.shutdown();
+//    } else {
+//        HTTPServer s;
+//        s.listen();
+//    }
+//}
 
 void run_tests(bool is_client) { 
+    test_shutdown(is_client);
     test_shutdown(is_client);
     //test_put(is_client);
     //test_get(is_client);

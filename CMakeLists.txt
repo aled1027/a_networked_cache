@@ -59,5 +59,11 @@ add_custom_target(gdb_server
     WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
     )
 
+add_custom_target(run
+    ./a_networked_cache
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+    )
+
 
 

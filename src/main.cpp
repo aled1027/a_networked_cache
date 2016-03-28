@@ -14,16 +14,14 @@
 #include <assert.h>
 #include "cache_tests.h"
 #include "network_tests.h"
-#include "poco_server.h"
-#include "poco_client.h"
 
 
 int main(int argc, char* argv[]) {
-    poco_server_go(argc, argv);
+    //poco_server_go(argc, argv);
 
     //assert(argc == 2);
     //cache_tests();
-    //network_tests(argv[1]);
+    network_tests(argv[1]);
 
     return 0;    
 }

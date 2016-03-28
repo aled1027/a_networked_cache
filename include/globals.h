@@ -17,11 +17,10 @@ void debug(std::string s) {
 }
 
 
-
 namespace globals
 {
-    const int HELLO_PORT = 50013;
-    const char* HELLO_PORT_STR = "50013";
+    const int HELLO_PORT = 9090;
+    const char* HELLO_PORT_STR = "9090";
     const char* HOST = "localhost";
 }
 
