@@ -53,18 +53,45 @@ class HTTPClient {
             debug("HTTPClient::~HTTPClient");
         }
 
-        void request(std::string method, std::string path, std::string version) {
-            std::string request = method;
+        std::string make_request(std::string method, std::string path) {
+            std::string request = "GET";
             request.append(" ");
             request.append(path);
             request.append(" ");
-            request.append(version);
-            request.append("\n");
-            network_client.send(request);
-            std::string raw_response = network_client.receive();
-            http_info response = parse_response(raw_response);
-            print_http(response);
+            request.append("HTTP/1.1\n");
+            return request;
         }
 
+        std::string get(std::string key) {
+            std::string path("/");
+            path.append(key);
+            network_client.send(make_request("GET", path));
+
+            std::string raw_response = network_client.receive();
+            http_info response = parse_response(raw_response);
+            uint32_t response_code = std::stoi(response.response_status_code);
+
+            if (response_code != 200) {
+                // TODO
+            } else {
+                // TODO
+            }
+            return "";
+        }
+
+        void set(std::string key, std::string value) {
+            std::string path ("/");
+            path.append(key);
+            path.append("/");
+            path.append(value);
+
+            network_client.send(make_request("PUT", path));
+
+        }
+        
+        void shutdown() {
+            network_client.send(make_request("POST", "/shutdown"));
+            
+        }
 };
 

@@ -67,7 +67,7 @@ class HTTPServer {
             std::string raw_request;
             while (true) {
                 // loops until a shutdown request.
-                
+
                 // wait for request
                 raw_request = "";
                 do {
@@ -84,56 +84,91 @@ class HTTPServer {
         bool process_request(std::string raw_request) {
             // return true if should shutdown else returns false
             http_info request = parse_request(raw_request);
-            
+
             debug("HTTPServer::process_request");
+            key_type key;
+            val_type val;
+            uint32_t val_size;
+            std::vector<std::string> tokens;
 
-            if (request.method.compare("GET") == 0) {
-            } else if (request.method.compare("POST") == 0) {
-                if (request.path.compare("/shutdown") == 0) {
+            switch(string_to_HTTPMethod(request.method)) {
+                case GET:
+
+                    // request should look like: "GET /key version"
+                    tokens = string_split(request.path, '/');
+
+                    // check if request.path is of form "/number"
+                    if (tokens.size() != 2 || tokens[0].compare("") != 0) {
+                        send_bad_request();
+                        return false;
+                    } 
+
+                    // search cache for 
+                    key = (key_type) strdup(tokens[1].c_str());
+                    uint32_t val_size;
+                    val = cache_get(cache, key, &val_size);
+
+                    if (val != NULL) {
+                        std::string body(tokens[1]);
+                        body.append(" ");
+                        body.append(std::string((char*) val));
+                        send_ok(body);
+                    } else {
+                        std::cout << "val was NULL" << std::endl;
+                        send_bad_request();
+                    }
+
+                    free((char*) key);
+                    free((void*) val); // TODO not sure if this is part of API
+                    break;
+                case POST:
+                    if (request.path.compare("/shutdown") == 0) {
+                        send_ok();
+                        return true; // true indicates shutdown
+                    } else {
+                    }
+                    break;
+                case PUT:
+                    tokens = string_split(request.path, '/');
+
+                    // TODO check for bad input
+
+                    // weird because cache is written in C
+                    key = (key_type) strdup(tokens[1].c_str());
+                    val = (val_type) strdup(tokens[2].c_str());
+                    val_size = tokens[2].size() + 1;
+
+                    cache_set(cache, key, val, val_size);
+
+                    free((char*) key);
+                    free((void*) val); 
                     send_ok();
-                    return true; // true indicates shutdown
-                }
-            } else if (request.method.compare("PUT") == 0) {
-                std::cout << "IN PUT" << std::endl;
-                std::vector<std::string> tokens = string_split(request.path, '/');
-
-                // TODO check for bad input
-                
-                std::cout << tokens[0] << std::endl; 
-                std::cout << tokens[1] << std::endl;
-                std::cout << tokens[2] << std::endl;
-
-                key_type key = new char[tokens[1].size()+1];
-                strcpy (key, tokens[1].c_str());
-                key_type val = new char[tokens[2].size()+1];
-                strcpy (val, tokens[2].c_str());
-                uint32_t val_size = sizeof(tokens[2]);
-
-                printf("%s\n", key);
-                printf("%s\n", val);
-                std::cout << val_size << std::endl;
-
-                //uint32_t size = sizeof(tokens[1]);
-
-
-                //cache_set(cache, &tokens[0], &tokens[1], sizeof(tokens[1]));
-            } else if (request.method.compare("DELETE") == 0) {
-            } else if (request.method.compare("HEAD") == 0) {
-            } else {
-                send_bad_request();
+                    break;
+                case DELETE:
+                    break;
+                case HEAD:
+                    break;
+                default:
+                    std::cout << "hit else statement" << std::endl;
+                    send_bad_request();
+                    break;
             }
-
-            send_bad_request();
             return false;
         }
 
-
         void send_ok() {
-            network_server.send("HTTP/1.1 200 OK");
+            network_server.send("HTTP/1.1 200 OK\n");
+        }
+
+        void send_ok(std::string body) {
+            std::string response = "HTTP/1.1 200 OK\n";
+            response.append(body);
+            response.append("\n");
+            network_server.send(response);
         }
 
         void send_bad_request() {
             network_server.send("HTTP/1.1 400 Bad Request\n");
         }
-        
+
 };
