@@ -8,7 +8,7 @@
 #include <iterator>
 #include <assert.h>
 
-#define DEBUG
+// #define DEBUG
 
 void debug(std::string s) {
 #ifdef DEBUG
@@ -21,6 +21,17 @@ namespace globals
     const int HELLO_PORT = 50013;
     const char* HELLO_PORT_STR = "50013";
     const char* HOST = "localhost";
+}
+
+std::vector<std::string> string_split(const std::string &text, char sep) {
+    std::vector<std::string> tokens;
+    std::size_t start = 0, end = 0;
+    while ((end = text.find(sep, start)) != std::string::npos) {
+        tokens.push_back(text.substr(start, end - start));
+        start = end + 1;
+    }
+    tokens.push_back(text.substr(start));
+    return tokens;
 }
 
 struct http_info {

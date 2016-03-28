@@ -16,23 +16,30 @@ void test_shutdown(bool is_client) {
     }
 }
 
-
-void client_tests() { 
-    bool is_client = true;
-    test_shutdown(is_client);
+void test_put(bool is_client) {
+    std::cout << "Running put test" << std::endl;
+    if (is_client) {
+        HTTPClient c;
+        c.request("PUT", "/3/4", "HTTP/1.1");
+        c.request("POST", "/shutdown", "HTTP/1.1");
+    } else {
+        HTTPServer s;
+        s.listen();
+    }
 }
 
-void server_tests() { 
-    bool is_client = false;
+
+void run_tests(bool is_client) { 
     test_shutdown(is_client);
+    test_put(is_client);
 }
 
 
 void network_tests(std::string user) {
     std::cout << "Running network_tests" << std::endl;
     if (user.compare("client") == 0) {
-        client_tests();
+        run_tests(true);
     } else {
-        server_tests();
+        run_tests(false);
     }
 }
