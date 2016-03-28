@@ -18,7 +18,7 @@
 int main(int argc, char* argv[]) {
     assert(argc == 2);
 
-    cache_tests();
+    //cache_tests();
     network_tests(argv[1]);
 
     return 0;    

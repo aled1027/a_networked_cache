@@ -42,23 +42,23 @@ std::vector<std::string> string_split(const std::string &text, char sep) {
     return tokens;
 }
 
-enum HTTPMethod {GET, POST, PUT, DELETE, HEAD, ERR};
-
-HTTPMethod string_to_HTTPMethod(std::string s) {
-    if (s.compare("GET") == 0) { 
-        return GET;
-    } else if (s.compare("POST") == 0) {
-        return POST;
-    } else if (s.compare("PUT") == 0) {
-        return PUT;
-    } else if (s.compare("DELETE") == 0) {
-        return DELETE;
-    } else if (s.compare("HEAD") == 0) {
-        return HEAD;
-    } else {
-        return ERR;
-    }
-}
+//enum HTTPMethod {GET, POST, PUT, DELETE, HEAD, ERR};
+//
+//HTTPMethod string_to_HTTPMethod(std::string s) {
+//    if (s.compare("GET") == 0) { 
+//        return GET;
+//    } else if (s.compare("POST") == 0) {
+//        return POST;
+//    } else if (s.compare("PUT") == 0) {
+//        return PUT;
+//    } else if (s.compare("DELETE") == 0) {
+//        return DELETE;
+//    } else if (s.compare("HEAD") == 0) {
+//        return HEAD;
+//    } else {
+//        return ERR;
+//    }
+//}
 
 struct http_info {
     std::string method;

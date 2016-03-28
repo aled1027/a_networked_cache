@@ -1,10 +1,12 @@
 #pragma once
 
-#include "globals.h"
 #include <cstring>
 #include <string>
-#include "cache.h"
 #include <boost/asio.hpp>
+
+#include "cache.h"
+#include "globals.h"
+#include "http.h"
 
 class NetworkServer {
     public:
@@ -83,7 +85,9 @@ class HTTPServer {
 
         bool process_request(std::string raw_request) {
             // return true if should shutdown else returns false
-            http_info request = parse_request(raw_request);
+            //http_info request = parse_request(raw_request);
+            Request request;
+            request.from_str(raw_request);
 
             debug("HTTPServer::process_request");
             key_type key;
@@ -91,7 +95,7 @@ class HTTPServer {
             uint32_t val_size;
             std::vector<std::string> tokens;
 
-            switch(string_to_HTTPMethod(request.method)) {
+            switch(request.method) {
                 case GET:
 
                     // request should look like: "GET /key version"
