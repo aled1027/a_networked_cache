@@ -3,10 +3,12 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 
 ## Getting started
 1. Install cmake
-2. `cmake .`
-3. `make`
-4. In one terminal, `make run_server`
-5. In another terminal, `make run_client`
+2. Install boost
+3. Install poco
+4. `cmake .`
+5. `make`
+6. In one terminal, `make run_server`
+7. In another terminal, `make run_client`
 
 ## Contributing
 If a new cpp file is added, it needs to be added to CMakeLists.txt.
@@ -30,3 +32,16 @@ Then run `cmake .` to recreate the makefile.
 - https://github.com/google/cpp-netlib
 - ima try using cmake for the makefile
     - https://cmake.org/
+
+```
+$ nc -l localhost 8000 &
+[1] 3150
+$ curl --proxy localhost:8000 --silent --max-time 1 http://www.stackoverflow.com
+GET http://www.stackoverflow.com HTTP/1.1
+User-Agent: curl/7.19.7 (x86_64-pc-linux-gnu) libcurl/7.19.7 OpenSSL/0.9.8k zlib/1.2.3.3 libidn/1.15
+Host: www.stackoverflow.com
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+[1]+  Done                    nc -l localhost 8000
+```
