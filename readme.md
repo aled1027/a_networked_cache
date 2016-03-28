@@ -8,6 +8,11 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 4. In one terminal, `make run_server`
 5. In another terminal, `make run_client`
 
+## Contributing
+If a new cpp file is added, it needs to be added to CMakeLists.txt.
+Where should be clear when you look at the file.
+Then run `cmake .` to recreate the makefile.
+
 ## New things we are trying
 - cplusplus
 - cmake

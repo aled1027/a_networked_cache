@@ -10,32 +10,16 @@
  * http://www.boost.org/doc/libs/1_35_0/doc/html/boost_asio/tutorial/tutdaytime1.html
  */
 
-#include <boost/asio.hpp>
 
-#include "network_server.h"
-#include "network_client.h"
+#include <assert.h>
 #include "cache_tests.h"
+#include "network_tests.h"
 
-void client_test() {
-    HTTPClient c;
-    c.request("GET", "/3", "version");
-}
-
-void server_test() {
-    HTTPServer s;
-    s.listen();
-}
 int main(int argc, char* argv[]) {
-    cache_tests();
-
     assert(argc == 2);
-    std::string client_str("client");
-    if (client_str.compare(argv[1]) == 0) {
-        client_test();
-    } else {
-        server_test();
-    }
+
+    cache_tests();
+    network_tests(argv[1]);
 
     return 0;    
-
 }

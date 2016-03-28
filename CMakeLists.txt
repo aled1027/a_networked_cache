@@ -9,13 +9,12 @@ find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context files
 include_directories(${Boost_INCLUDE_DIR})
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-
-
-add_compile_options(-std=c++14)
-add_compile_options(-fpermissive)
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14")
+add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 add_executable(a_networked_cache "src/main.cpp" "src/cache_tests.cpp" "src/cache.cpp" 
-    "src/dbLL.cpp" "src/dbLL_tests.cpp" "src/evict_tests.cpp" "src/evict.cpp" "src/node.cpp")
+    "src/dbLL.cpp" "src/dbLL_tests.cpp" "src/evict_tests.cpp" "src/evict.cpp" "src/node.cpp"
+    "src/network_tests.cpp")
 
 target_link_libraries(a_networked_cache ${Boost_LIBRARIES})
 # run commands

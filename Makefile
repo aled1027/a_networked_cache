@@ -269,6 +269,21 @@ src/main.s:
 .PHONY : src/main.s
 
 # target to build an object file
+src/network_tests.o:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/network_tests.o
+.PHONY : src/network_tests.o
+
+# target to preprocess a source file
+src/network_tests.i:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/network_tests.i
+.PHONY : src/network_tests.i
+
+# target to generate assembly for a file
+src/network_tests.s:
+	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/network_tests.s
+.PHONY : src/network_tests.s
+
+# target to build an object file
 src/node.o:
 	$(MAKE) -f CMakeFiles/a_networked_cache.dir/build.make CMakeFiles/a_networked_cache.dir/src/node.o
 .PHONY : src/node.o
@@ -317,6 +332,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/network_tests.o"
+	@echo "... src/network_tests.i"
+	@echo "... src/network_tests.s"
 	@echo "... src/node.o"
 	@echo "... src/node.i"
 	@echo "... src/node.s"

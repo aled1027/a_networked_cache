@@ -2,6 +2,7 @@
 
 #include "globals.h"
 #include "cache.h"
+#include <boost/asio.hpp>
 
 class NetworkServer {
     public:

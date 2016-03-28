@@ -1,6 +1,14 @@
 #pragma once
 
 //#define DEBUG
+#include <sstream>
+#include <istream>
+#include <vector>
+#include <iostream>
+#include <iterator>
+#include <assert.h>
+
+#define DEBUG
 
 void debug(std::string s) {
 #ifdef DEBUG
