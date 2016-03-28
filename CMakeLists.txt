@@ -9,7 +9,7 @@ find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context files
 include_directories(${Boost_INCLUDE_DIR})
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14")
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -g")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 add_executable(a_networked_cache "src/main.cpp" "src/cache_tests.cpp" "src/cache.cpp" 
