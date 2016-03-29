@@ -86,7 +86,6 @@ void evict_get(evict_t evict, key_type key)
     }
     if (failed) {
         fprintf(stderr, "key not found\n");
-        assert(false);
     }
 }
 
@@ -104,7 +103,6 @@ void evict_delete(evict_t evict, key_type key)
         }
     }
     if (failed) {
-        assert(false);
         fprintf(stderr, "key not found in eviction key\n");
     }
 }

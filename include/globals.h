@@ -8,7 +8,7 @@
 #include <iterator>
 #include <assert.h>
 
-// #define DEBUG
+#define DEBUG
 
 void debug(std::string s) {
 #ifdef DEBUG

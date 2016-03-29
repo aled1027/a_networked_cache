@@ -9,8 +9,6 @@
 void test_shutdown(bool is_client) {
     std::cout << "Running shutdown test" << std::endl;
     if (is_client) {
-        HTTPClient c;
-        c.shutdown();
     } else {
         Server s;
         s.start();
@@ -20,32 +18,34 @@ void test_shutdown(bool is_client) {
 void test_put(bool is_client) {
     std::cout << "Running put test" << std::endl;
     if (is_client) {
-        HTTPClient c;
-        //c.request("PUT", "/3/999", "HTTP/1.1");
-        //c.request("POST", "/shutdown", "HTTP/1.1");
     } else {
         Server s;
         s.start();
     }
 }
 
-//void test_get(bool is_client) {
-//    std::cout << "Running get test" << std::endl;
-//    if (is_client) {
-//        HTTPClient c;
-//        c.set("3", "999");
-//        c.get("3");
-//        c.shutdown();
-//    } else {
-//        HTTPServer s;
-//        s.listen();
-//    }
-//}
+void test_delete(bool is_client) {
+    std::cout << "Running delete test" << std::endl;
+    if (is_client) {
+    } else {
+        Server s;
+        s.start();
+    }
+}
 
+void test_head(bool is_client) {
+    std::cout << "Running head test" << std::endl;
+    if (is_client) {
+    } else {
+        Server s;
+        s.start();
+    }
+}
 void run_tests(bool is_client) { 
     test_shutdown(is_client);
     test_put(is_client);
-    //test_get(is_client);
+    test_delete(is_client);
+    test_head(is_client);
 }
 
 void network_tests(std::string user) {
