@@ -1,8 +1,8 @@
 
 #include <iostream>
-//#include "network_server.h"
+
+#include "poco_client.h"
 #include "poco_server.h"
-#include "network_client.h"
 #include "network_tests.h"
 
 
@@ -41,6 +41,7 @@ void test_head(bool is_client) {
         s.start();
     }
 }
+
 void run_tests(bool is_client) { 
     test_shutdown(is_client);
     test_put(is_client);

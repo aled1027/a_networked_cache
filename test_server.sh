@@ -1,4 +1,4 @@
-### SHUTDOWN TEST ###
+## SHUTDOWN TEST ###
 echo "SHUTDOWN TEST"
 curl -X GET http://localhost:9090/2
 echo ""
@@ -24,7 +24,7 @@ curl -X PUT http://localhost:9090/3/4
 echo ""
 curl -X DELETE http://localhost:9090/3
 echo ""
-curl -X GET http://localhost:9090/4 # should be error page
+curl -X GET http://localhost:9090/3 # should be error page
 echo ""
 curl -X POST http://localhost:9090/shutdown
 echo ""

@@ -199,6 +199,5 @@ class Server : public ServerApplication
             s.stopAll();
             return Application::EXIT_OK;
         }
-
 };
 
