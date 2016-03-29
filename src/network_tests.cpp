@@ -13,22 +13,21 @@ void test_shutdown(bool is_client) {
         c.shutdown();
     } else {
         Server s;
-        char *argv[1] = {"name"};
-        s.run(1, argv);
+        s.start();
     }
 }
 
-//void test_put(bool is_client) {
-//    std::cout << "Running put test" << std::endl;
-//    if (is_client) {
-//        HTTPClient c;
-//        //c.request("PUT", "/3/999", "HTTP/1.1");
-//        //c.request("POST", "/shutdown", "HTTP/1.1");
-//    } else {
-//        HTTPServer s;
-//        s.listen();
-//    }
-//}
+void test_put(bool is_client) {
+    std::cout << "Running put test" << std::endl;
+    if (is_client) {
+        HTTPClient c;
+        //c.request("PUT", "/3/999", "HTTP/1.1");
+        //c.request("POST", "/shutdown", "HTTP/1.1");
+    } else {
+        Server s;
+        s.start();
+    }
+}
 
 //void test_get(bool is_client) {
 //    std::cout << "Running get test" << std::endl;
@@ -45,8 +44,7 @@ void test_shutdown(bool is_client) {
 
 void run_tests(bool is_client) { 
     test_shutdown(is_client);
-    test_shutdown(is_client);
-    //test_put(is_client);
+    test_put(is_client);
     //test_get(is_client);
 }
 

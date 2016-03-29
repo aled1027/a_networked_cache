@@ -10,24 +10,15 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include "globals.h"
 #include "cache.h"
 
 using namespace Poco::Net;
 using namespace Poco::Util;
 using namespace std;
 
-class MyGetHandler : public HTTPRequestHandler {
-public:
-    virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp) {
-        resp.setStatus(HTTPResponse::HTTP_OK);
-        resp.setContentType("text/html");
-        ostream& out = resp.send();
-        out << "<h1>"
-            << req.getURI()
-            << "<h1>";
-        out.flush();
-    }
-};
+cache_t cache;
 
 class MyRequestHandler : public HTTPRequestHandler
 {
@@ -37,11 +28,22 @@ class MyRequestHandler : public HTTPRequestHandler
     {
         if (req.getMethod().compare("POST") == 0) {
             post(req, resp);
+        } else if (req.getMethod().compare("GET") == 0) {
+            get(req, resp);
         } else {
             ostream& out = resp.send();
             out << "<h1>Undetected!</h1>";
             out.flush();
         }
+    }
+
+    void get(HTTPServerRequest& req, HTTPServerResponse &resp) {
+        std::cout << "get" << std::endl;
+        resp.setStatus(HTTPResponse::HTTP_OK);
+        resp.setContentType("text/html");
+        ostream& out = resp.send();
+        out << "<h1>GET</h1>";
+        out.flush();
     }
 
     void post(HTTPServerRequest& req, HTTPServerResponse &resp) {
@@ -73,34 +75,28 @@ class MyRequestHandlerFactory : public HTTPRequestHandlerFactory
     public:
         virtual HTTPRequestHandler* createRequestHandler(const HTTPServerRequest &request)
         {
-            if (request.getMethod() == "GET") {
-                std::cout << "in here" << std::endl;
-                return new MyGetHandler;
-            } else if (request.getMethod() == "POST") {
-                return new MyRequestHandler; 
-            } else {
-                return new MyRequestHandler; 
-            }
+            return new MyRequestHandler; 
         }
 };
 
 class Server : public ServerApplication
 {
+    public:
+        void start() {
+            cache = create_cache(128);
+            run();
+        }
+
     protected:
         int main(const vector<string> &)
         {
             std::cout << "in protect main" << std::endl;
-            HTTPServer s(new MyRequestHandlerFactory, ServerSocket(9090), new HTTPServerParams);
+            HTTPServer s(new MyRequestHandlerFactory, ServerSocket(globals::PORT), new HTTPServerParams);
             s.start();
             waitForTerminationRequest();  // wait for CTRL-C or kill
-            s.stop();
+            s.stopAll();
             return Application::EXIT_OK;
         }
 
 };
 
-
-void poco_server_go(int argc, char *argv[]) {
-    Server s;
-    s.run(argc, argv);
-}
