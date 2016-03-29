@@ -16,7 +16,6 @@ void debug(std::string s) {
 #endif
 }
 
-
 namespace globals
 {
     const int PORT = 9090;

@@ -10,7 +10,6 @@
  * http://www.boost.org/doc/libs/1_35_0/doc/html/boost_asio/tutorial/tutdaytime1.html
  */
 
-
 #include <assert.h>
 #include "cache_tests.h"
 #include "network_tests.h"
