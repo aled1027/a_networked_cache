@@ -1,6 +1,7 @@
 #pragma once
+#ifndef globals_h
+#define globals_h
 
-//#define DEBUG
 #include <sstream>
 #include <istream>
 #include <vector>
@@ -39,3 +40,4 @@ std::vector<std::string> string_split(const std::string &text, char sep) {
     return tokens;
 }
 
+#endif

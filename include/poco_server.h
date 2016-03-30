@@ -1,3 +1,5 @@
+#pragma once 
+
 #include <Poco/Net/ServerSocket.h>
 #include <Poco/Net/HTTPServer.h>
 #include <Poco/Net/HTTPRequestHandler.h>
@@ -24,6 +26,7 @@ class MyRequestHandler : public HTTPRequestHandler
     public:
         virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp)
         {
+            std::cout << "got a request" << std::endl;
             if (req.getMethod() == "POST") {
                 post(req, resp);
             } else if (req.getMethod() == "GET") {

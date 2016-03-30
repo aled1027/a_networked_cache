@@ -16,9 +16,8 @@
 
 
 int main(int argc, char* argv[]) {
-    //poco_server_go(argc, argv);
 
-    //assert(argc == 2);
+    assert(argc == 2);
     //cache_tests();
     network_tests(argv[1]);
 
