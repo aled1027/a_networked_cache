@@ -111,23 +111,28 @@ class Client {
                     break;
             }
 
-            char *buf = (char *)"hi";            
-            // char *buf = calloc(strlen(val) + 1,1);
-            // memcpy(buf,val,strlen(val));
+            std::vector<std::string> tokens = string_split(body, ',');
+            tokens = string_split(tokens[2], '}');
+            tokens = string_split(tokens[0], ':');
+
+
+            char *val = (char *) tokens[1].c_str();            
+            char *buf = (char *)calloc(strlen(val) + 1,1);
+            memcpy(buf,val,strlen(val));
 
             return buf;
         }
 
         void cache_set(cache_client cache, key_type key, val_type val, uint32_t val_size){
             std::ostringstream oss;
-            oss << "http://" << cache->host << ":" << cache->port << "/" << key << "/" << val;
+            oss << "http://" << cache->host << ":" << cache->port << "/" << key << "/" << (uint8_t *)val;
             std::string uri_str = oss.str();
 
             Poco::Net::HTTPResponse res; 
             std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_PUT, res);
             switch(res.getStatus()) {
                 case Poco::Net::HTTPResponse::HTTP_OK:
-                    std::cout << "cache_set: got ok: "<< key << " : " << val << std::endl;
+                    std::cout << "cache_set: got ok: "<< key << " : " << (uint8_t *)val << std::endl;
                     std::cout <<"body: " << body << std::endl;
                     break;
                 default:
@@ -162,7 +167,7 @@ class Client {
 
             //form the request
             std::ostringstream oss;
-            oss << "http://" << cache->host << ":" << cache->port << "/memsize/" << &maxmem;
+            oss << "http://" << cache->host << ":" << cache->port << "/memsize/" << maxmem;
             std::string uri_str = oss.str();
 
             //send the request (response is in res)
