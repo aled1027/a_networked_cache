@@ -81,7 +81,7 @@ static void test_set_get()
 
     for (uint32_t i = 0; i < nsets; i++) {
         uint32_t key_size = (rand() % 10) + 2;
-        saved_keys[i] = calloc(key_size, sizeof(uint8_t));
+        saved_keys[i] = (uint8_t *)calloc(key_size, sizeof(uint8_t));
         for (uint32_t j = 0; j < key_size - 1; j++) {
             saved_keys[i][j] = rand() % 255;
         }

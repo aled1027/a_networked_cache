@@ -39,7 +39,7 @@ static void print_key(key_type key)
     printf("\n");
 }
 
-struct cache_obj 
+struct cache_obj
 {
     // http://stackoverflow.com/questions/6316987/should-struct-definitions-go-in-h-or-c-file
     uint64_t num_buckets;
@@ -54,22 +54,22 @@ struct cache_obj
     // each node in double linked list is a hash-bucket
 };
 
-static uint64_t cache_hash(cache_t cache, key_type key) 
+static uint64_t cache_hash(cache_t cache, key_type key)
 {
     return cache->hash(key) % cache->num_buckets;
 }
 
 static void cache_dynamic_resize(cache_t cache)
-{ 
+{
     // dynamically resizes size of hash table, via changing num_buckets
     // and copying key-value pairs IF the current load factor exceeds
-    
+
     float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
     if (load_factor > MAX_LOAD_FACTOR) {
         uint64_t new_num_buckets = (uint64_t) ((float) cache->num_elements / RESET_LOAD_FACTOR);
 
         // new memory for new cache & initialize lists
-        hash_bucket **new_buckets = calloc(new_num_buckets, sizeof(hash_bucket*)); 
+        hash_bucket **new_buckets = (hash_bucket **)calloc(new_num_buckets, sizeof(hash_bucket*));
         assert(new_buckets && "memory");
         for (uint32_t i = 0; i < new_num_buckets; i++){
             new_buckets[i] = new_list();
@@ -96,18 +96,18 @@ static void cache_dynamic_resize(cache_t cache)
         cache->num_buckets = new_num_buckets;
         free(cache->buckets);
         cache->buckets = new_buckets;
-    } 
+    }
 }
 
 cache_t create_cache(uint64_t maxmem)
 {
-    cache_t c = calloc(1, sizeof(struct cache_obj));
+    cache_t c = (cache_obj *)calloc(1, sizeof(struct cache_obj));
 
     c->memused = 0;
     c->maxmem = maxmem;
     c->num_buckets = 100;
 
-    c->buckets = calloc(c->num_buckets, sizeof(hash_bucket*));
+    c->buckets = (hash_bucket **)calloc(c->num_buckets, sizeof(hash_bucket*));
     assert(c->buckets);
     for (uint32_t i = 0; i < c->num_buckets; i++){
         c->buckets[i] = new_list();
@@ -130,6 +130,13 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
         printf("value = %" PRIu8 "\n\n", *(uint8_t *)val);
     }
     cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
+
+    //case where the value side being inserted is greater than max_mem
+    if (val_size > cache->maxmem){
+        printf("Could not store that value. Sorry!\n");
+        printf("cache->maxmem: %d", cache->maxmem);
+        return;
+    }
 
     // eviction, if necessary
     cache->memused += val_size;
@@ -166,11 +173,13 @@ val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 
     hash_bucket *e = cache->buckets[hash];
     void *res = (void *) ll_search(e, key, val_size);
-    evict_get(cache->evict, key);
+    if(res != NULL){
+        evict_get(cache->evict, key);
+    }
     return res;
 }
 
-void cache_delete(cache_t cache, key_type key) 
+void cache_delete(cache_t cache, key_type key)
 {
     uint64_t hash = cache_hash(cache, key);
     // uint32_t val_size;

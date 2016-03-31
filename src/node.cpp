@@ -25,7 +25,7 @@ node_t *new_node(key_type key, val_type val, uint32_t val_size)
 
     node->val_size = val_size;
 
-    node->key= calloc(strlen((const char*) key) + 1, sizeof(uint8_t));
+    node->key= (key_type)calloc(strlen((const char*) key) + 1, sizeof(uint8_t));
     strcpy((char *) node->key, (const char*) key);
 
     void *valbuf = calloc(val_size, sizeof(uint8_t));

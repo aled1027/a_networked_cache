@@ -16,10 +16,10 @@ struct evict_obj
 
 evict_t evict_create(uint32_t max_size)
 {
-    evict_t e = calloc(1, sizeof(struct evict_obj));
+    evict_t e = (evict_obj *)calloc(1, sizeof(struct evict_obj));
     assert(e);
     e->max_queue_size = max_size;
-    e->queue = calloc(max_size, sizeof(key_type));
+    e->queue = (key_type *)calloc(max_size, sizeof(key_type));
     for (uint32_t i = 0; i < max_size; ++i) {
         e->queue[i] = NULL;
     }
@@ -33,7 +33,7 @@ void evict_set(evict_t evict, key_type key)
     // check for resizing queue
     if (evict->rear + 1 == evict->max_queue_size) {
         evict->max_queue_size *= 2;
-        evict->queue = realloc(evict->queue, evict->max_queue_size * sizeof(key_type));
+        evict->queue = (key_type *)realloc(evict->queue, evict->max_queue_size * sizeof(key_type));
         assert(evict->queue && "memory");
     }
 
@@ -52,7 +52,7 @@ void evict_set(evict_t evict, key_type key)
     //}
 
     // put key on back of queue
-    key_type key_copy = calloc(strlen((const char*) key) + 1, sizeof(uint8_t));
+    key_type key_copy = (key_type)calloc(strlen((const char*) key) + 1, sizeof(uint8_t));
     strcpy((char*) key_copy, (char*) key);
     evict->queue[evict->rear] = key_copy;
     ++evict->rear;
@@ -68,7 +68,7 @@ void evict_get(evict_t evict, key_type key)
             // check for resizing queue
             if (evict->rear + 1 == evict->max_queue_size) {
                 // double the size of the queue!
-                evict->queue = realloc(evict->queue, 2 * evict->max_queue_size * sizeof(key_type));
+                evict->queue = (key_type *)realloc(evict->queue, 2 * evict->max_queue_size * sizeof(key_type));
                 for (uint32_t j = evict->max_queue_size; j < 2 * evict->max_queue_size; ++j) {
                     evict->queue[j] = NULL;
                 }
@@ -122,7 +122,7 @@ key_type evict_select_for_removal(evict_t evict)
 {
     while (evict->front < evict->rear) {
         if (evict->queue[evict->front]) {
-            key_type ret_key = calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
+            key_type ret_key = (key_type)calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
             strcpy((char*) ret_key, (char*) evict->queue[evict->front]);
             return ret_key;
         }

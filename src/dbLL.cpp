@@ -59,7 +59,7 @@ uint32_t ll_remove_key(dbLL_t *list, key_type key){
     node_t *cur = list->head;
     uint32_t val_size = 0;
     while((cur != NULL) &&(val_size == 0)){
-        if (*cur->key == *key){
+        if (strcmp((const char*) cur->key, (const char*) key) == 0){
             val_size = cur->val_size;
             if((cur == list->head) && (cur == list->tail)){
                 // printf("cur head & tail ");
@@ -119,7 +119,7 @@ void rep_list(dbLL_t *list){
 
 key_type *ll_get_keys(dbLL_t *list)
 {
-    key_type *ret_keys = calloc(list->size, sizeof(key_type));
+    key_type *ret_keys = (key_type *)calloc(list->size, sizeof(key_type));
     node_t *cur = list->head;
     uint32_t i = 0;
     while (cur != NULL) {
