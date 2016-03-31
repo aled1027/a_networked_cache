@@ -19,10 +19,12 @@ add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 # Other external libraries
 find_library(POCO_FOUNDATION PocoFoundation)
 find_library(POCO_NET PocoNet)
+find_library(POCO_JSON PocoJSON)
 find_library(POCO_UTIL PocoUtil)
 set(EXTERNAL_LIBS
     ${POCO_FOUNDATION}
     ${POCO_NET}
+    ${POCO_JSON}
     ${POCO_UTIL}
     )
 

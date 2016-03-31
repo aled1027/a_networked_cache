@@ -68,7 +68,7 @@ class MyRequestHandler : public HTTPRequestHandler
                 key_type key = (key_type) tokens[1].c_str();
                 val_type val = (val_type) tokens[2].c_str();
                 uint32_t val_size = strlen(tokens[2].c_str());
-                std::cout << "val_size: " << val_size <<std::endl;
+                // std::cout << "val_size: " << val_size <<std::endl;
                 cache_set(cache, key, val, val_size);
                 std::string body("put");
                 ok(req, resp, body);
@@ -129,7 +129,7 @@ class MyRequestHandler : public HTTPRequestHandler
 
                     // return response with uri:{key: k, value: v } 
                     std::ostringstream oss;
-                    oss << "{key: " << key << ", value: " << str_val << "}";
+                    oss << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
                     std::string body = oss.str();
                     ok(req, resp, body);
                 }

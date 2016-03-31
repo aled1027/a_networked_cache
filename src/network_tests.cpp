@@ -30,7 +30,7 @@ void test_get(bool is_client) {
         uint8_t val[6] = "world";
         c.cache_set(cache, key, val, 6);
         uint8_t *res = (uint8_t *)c.cache_get(cache, key);
-        assert(strcmp((const char *)val, (const char *)res) && "get test failed");
+        assert(!(strcmp((const char *)val, (const char *)res)) && "get test failed");
         c.destroy_cache(cache);
     } else {
         Server s;

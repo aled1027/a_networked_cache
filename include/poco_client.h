@@ -12,6 +12,11 @@
 #include <Poco/Exception.h>
 #include <Poco/URI.h>
 
+// used to parse JSON
+#include <Poco/JSON/JSON.h>
+#include <Poco/JSON/Parser.h>
+#include <Poco/Dynamic/Var.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -111,15 +116,25 @@ class Client {
                     break;
             }
 
-            // TODO parsing
-            std::vector<std::string> tokens = string_split(body, ',');
-            tokens = string_split(tokens[2], '}');
-            tokens = string_split(tokens[0], ':');
+            // parsing info w/ POCO courtesy of: 
+            // http://stackoverflow.com/questions/15387154/correct-usage-of-poco-c-json-for-parsing-data
+            // std::vector<std::string> tokens = string_split(body, ',');
+            // tokens = string_split(tokens[2], '}');
+            // tokens = string_split(tokens[0], ':');
+
+            Poco::JSON::Parser parser;
+            Poco::Dynamic::Var parsed_json = parser.parse(body);
+            Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
+
+            Poco::Dynamic::Var val_var = parsed_obj->get("value");
+            std::string val = val_var.convert<std::string>();
+
+            std::cout << "cache_get: value recieved: " << val << std::endl;
 
 
-            char *val = (char *) tokens[1].c_str();            
-            char *buf = (char *)calloc(strlen(val) + 1,1);
-            memcpy(buf,val,strlen(val));
+            char *val_c = (char *)val.c_str();            
+            char *buf = (char *)calloc(strlen(val_c) + 1,1);
+            memcpy(buf,val_c,strlen(val_c));
 
             return buf;
         }
