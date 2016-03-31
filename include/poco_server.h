@@ -154,12 +154,14 @@ class MyRequestHandler : public HTTPRequestHandler
 
             // check format
             if (tokens.size() != 3 || tokens[0] != "" || tokens[1] != "memsize") {
+                debug("post parsing error");
                 bad_request(req, resp);
                 return;
             }
             
             // check if cache is already being used
             if (cache_space_used(cache) != 0) {
+                debug("post cache space used != 0");
                 bad_request(req, resp);
                 return;
             }

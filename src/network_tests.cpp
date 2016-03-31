@@ -31,6 +31,7 @@ void test_get(bool is_client) {
         c.cache_set(cache, key, val, 6);
         uint8_t *res = (uint8_t *)c.cache_get(cache, key);
         assert(strcmp((const char *)val, (const char *)res) && "get test failed");
+        c.destroy_cache(cache);
     } else {
         Server s;
         s.start();
@@ -46,6 +47,7 @@ void test_put(bool is_client) {
         uint8_t key[6] = "hello";
         uint8_t val[6] = "world";
         c.cache_set(cache, key, val, 6);
+        c.destroy_cache(cache);
     } else {
         Server s;
         s.start();
@@ -54,7 +56,7 @@ void test_put(bool is_client) {
 }
 
 void test_update(bool is_client) {
-    std::cout << "Running put test" << std::endl;
+    std::cout << "Running update test" << std::endl;
     if (is_client) {
     } else {
         Server s;
@@ -72,6 +74,7 @@ void test_delete(bool is_client) {
         uint8_t val[11] = "delete me!";
         c.cache_set(cache, key, val, 11);
         c.cache_delete(cache, key);
+        c.destroy_cache(cache);
     } else {
         Server s;
         s.start();
@@ -94,6 +97,7 @@ void test_memsize(bool is_client) {
     if (is_client) {
         Client c;
         cache_client cache = c.create_cache(15000);
+        c.destroy_cache(cache);
     } else {
         Server s;
         s.start();
@@ -102,14 +106,13 @@ void test_memsize(bool is_client) {
 }
 
 void run_tests(bool is_client) { 
-    // test_shutdown(is_client);
-    //test_update(is_client);
-    //test_head(is_client);
-    test_memsize(is_client);
-    test_put(is_client);
+    test_shutdown(is_client);
+    //test_update(is_client); // unimplemented
+    //test_head(is_client); // unimplemented
+    //test_memsize(is_client); // unimplemented
+    test_put(is_client); // 
     test_get(is_client);
     test_delete(is_client);
-    test_shutdown(is_client);
 }
 
 void network_tests(std::string user) {

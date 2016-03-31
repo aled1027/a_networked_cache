@@ -111,6 +111,7 @@ class Client {
                     break;
             }
 
+            // TODO parsing
             std::vector<std::string> tokens = string_split(body, ',');
             tokens = string_split(tokens[2], '}');
             tokens = string_split(tokens[0], ':');
@@ -188,7 +189,7 @@ class Client {
 
         void destroy_cache(cache_client cache) {
             std::ostringstream oss;
-            oss << "http://" << cache->host << ":" << cache->port << "/shutdown/";
+            oss << "http://" << cache->host << ":" << cache->port << "/shutdown";
             std::string uri_str = oss.str();
 
             Poco::Net::HTTPResponse res;
