@@ -1,9 +1,11 @@
 *.o
 a.out
+tags
+ses.vim
+a_networked_cache
+CMakeCache.txt
 CMakeFiles
+CMakeScripts
+Makefile
 cmake_install.cmake
 install_manifest.txt
-CMakeCache.txt
-tags
-a_networked_cache
-ses.vim
