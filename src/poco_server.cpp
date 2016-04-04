@@ -1,30 +1,20 @@
-// #pragma once 
+#include <iostream>
+#include <string>
+#include <vector>
+#include <Poco/Process.h>
+#include <Poco/Net/ServerSocket.h>
 
-// #include <Poco/Net/ServerSocket.h>
-// #include <Poco/Net/HTTPServer.h>
-// #include <Poco/Net/HTTPRequestHandler.h>
-// #include <Poco/Net/HTTPRequestHandlerFactory.h>
-// #include <Poco/Net/HTTPResponse.h>
-// #include <Poco/Net/HTTPServerRequest.h>
-// #include <Poco/Net/HTTPServerResponse.h>
-// #include <Poco/Util/ServerApplication.h>
-// #include <Poco/Process.h>
-// #include <iostream>
-// #include <string>
-// #include <vector>
-
-// #include "globals.h"
-// #include "cache.h"
 #include "poco_server.h"
+#include "globals.h"
 
-// using namespace Poco::Net;
-// using namespace Poco::Util;
+#include "cache.h"
 
 cache_t cache;
 
 void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp)
 {
-    std::cout << "got a request" << std::endl;
+    debug("got a request");
+
     if (req.getMethod() == "POST") {
         post(req, resp);
     } else if (req.getMethod() == "GET") {
@@ -166,7 +156,7 @@ void MyRequestHandler::post(HTTPServerRequest& req, HTTPServerResponse &resp) {
         bad_request(req, resp);
         return;
     }
-    
+
     // check if cache is already being used
     if (cache_space_used(cache) != 0) {
         debug("post cache space used != 0");
@@ -210,9 +200,9 @@ void MyRequestHandler::bad_request(HTTPServerRequest& req, HTTPServerResponse &r
 }
 
 HTTPRequestHandler* MyRequestHandlerFactory::createRequestHandler(const HTTPServerRequest &request)
-        {
-            return new MyRequestHandler; 
-        }
+{
+    return new MyRequestHandler; 
+}
 
 
 void Server::start() {

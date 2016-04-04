@@ -1,20 +1,11 @@
 #pragma once 
 
-#include <Poco/Net/ServerSocket.h>
 #include <Poco/Net/HTTPServer.h>
 #include <Poco/Net/HTTPRequestHandler.h>
 #include <Poco/Net/HTTPRequestHandlerFactory.h>
-#include <Poco/Net/HTTPResponse.h>
 #include <Poco/Net/HTTPServerRequest.h>
 #include <Poco/Net/HTTPServerResponse.h>
 #include <Poco/Util/ServerApplication.h>
-#include <Poco/Process.h>
-#include <iostream>
-#include <string>
-#include <vector>
-
-#include "globals.h"
-#include "cache.h"
 
 using namespace Poco::Net;
 using namespace Poco::Util;
@@ -22,22 +13,15 @@ using namespace Poco::Util;
 class MyRequestHandler : public HTTPRequestHandler
 {
     public:
-        virtual void handleRequest(HTTPServerRequest &req, HTTPServerResponse &resp);
-
+        virtual void handleRequest(HTTPServerRequest& req, HTTPServerResponse& resp);
+    private:
         void head(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void put(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void handle_delete(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void get(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void post(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void ok(HTTPServerRequest& req, HTTPServerResponse &resp, std::string& body);
-
         void not_found(HTTPServerRequest& req, HTTPServerResponse &resp);
-
         void bad_request(HTTPServerRequest& req, HTTPServerResponse &resp);
 };
 

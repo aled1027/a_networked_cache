@@ -1,46 +1,7 @@
 #pragma once
 
-#include <Poco/Net/HTTPRequest.h>
-#include <Poco/Net/HTTPResponse.h>
-#include <Poco/Net/HTTPRequestHandler.h>
-#include <Poco/Net/HTTPClientSession.h>
-
-#include <Poco/StreamCopier.h>
-#include <Poco/Path.h>
-#include <Poco/Exception.h>
-#include <Poco/URI.h>
-
-// used to parse JSON
-#include <Poco/JSON/JSON.h>
-#include <Poco/JSON/Parser.h>
-#include <Poco/Dynamic/Var.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>  // for copy
-#include <iterator>
-
 #include "cache.h"
-
-// #ifndef GLOBALS_H
-// #define GLOBALS_H
 #include "globals.h"
-// #endif
-
-// using namespace Poco::Net;
-// using namespace Poco::Util;
-
-// struct cache_obj
-// {
-//     int port;
-//     const char* host;
-// };
-
-// typedef const uint8_t *key_type;
-// typedef const void *val_type;
-// typedef struct cache_client_t *cache_client;
-// typedef struct cache_obj *cache_t;
 
 class Client {
     public:
