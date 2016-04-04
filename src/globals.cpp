@@ -8,6 +8,7 @@ void debug(std::string s) {
 namespace globals
 {
     const int PORT = 9090;
+    const int UDP_PORT = 9091;
     const char *HOST = "localhost";
 }
 

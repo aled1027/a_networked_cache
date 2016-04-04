@@ -14,6 +14,7 @@ void debug(std::string s);
 namespace globals
 {
     extern const int PORT;
+    extern const int UDP_PORT;
     extern const char* HOST;
 }
 
