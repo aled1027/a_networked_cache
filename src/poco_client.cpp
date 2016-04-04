@@ -11,10 +11,6 @@
 #include <Poco/Dynamic/Var.h>
 
 #include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <iterator>
 
 #include "poco_client.h"
 
@@ -68,11 +64,11 @@ cache_t Client::create_cache(uint64_t maxmem) {
     //parse body
     switch(res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "cache_create:: got ok" << std::endl;
-            std::cout <<"body:: " << body << std::endl;
+            debug("got ok");
             break;
         default:
-            std::cout << "cache_create:: could not update maxmem " << std::endl;
+            debug("got not ok");
+            break;
     }
     return cache;
 }
@@ -89,11 +85,10 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
 
     switch (res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "cache_get:: got ok" << std::endl;
-            std::cout <<"body:: " << body << std::endl;
+            debug("got ok");
             break;
         default:
-            std::cout << "cache_get:: got not-ok" << std::endl;
+            debug("got not ok");
             break;
     }
 
@@ -104,13 +99,10 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
     Poco::Dynamic::Var val_var = parsed_obj->get("value");
     std::string val = val_var.convert<std::string>();
 
-    std::cout << "cache_get:: value recieved: " << val << std::endl;
-
-
+    // TODO maybe a memory link. I think that this class owns the memory
     char *val_c = (char *)val.c_str();            
-    char *buf = (char *)calloc(strlen(val_c) + 1,1);
+    char *buf = (char *) calloc(strlen(val_c) + 1, 1);
     memcpy(buf,val_c,strlen(val_c));
-
     return buf;
 }
 
@@ -118,18 +110,16 @@ void Client::cache_set(cache_t cache, key_type key, val_type val, uint32_t val_s
     std::ostringstream oss;
     oss << "http://" << cache->host << ":" << cache->port << "/" << key << "/" << (uint8_t *)val;
     std::string uri_str = oss.str();
-
     Poco::Net::HTTPResponse res; 
     std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_PUT, res);
     switch(res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "cache_set:: got ok: "<< key << " : " << (uint8_t *)val << std::endl;
-            std::cout <<"cache_set:: body: " << body << std::endl;
+            debug("got ok");
             break;
         default:
-            std::cout << "cache_set:: got not-ok" << std::endl;
+            debug("got not ok");
+            break;
     }
-
 }
 
 void Client::cache_delete(cache_t cache, key_type key) {
@@ -141,41 +131,43 @@ void Client::cache_delete(cache_t cache, key_type key) {
     std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_DELETE, res);
     switch(res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "cache_delete:: got ok. key deleted: "<< key << std::endl;
-            std::cout <<"body: " << body << std::endl;
+            debug("cache_delete:: got ok. key deleted");
             break;
         default:
-            std::cout << "cache_delete:: got not-ok" << std::endl;
+            debug("cache_delete:: got not-ok");
+            break;
     }
 
 }
 
 uint64_t Client::cache_space_used(cache_t cache){
     std::ostringstream oss;
-    oss << "http://" << cache->host << ":" << cache->port << "/";
+    oss << "http://" << cache->host << ":" << cache->port << "/memused";
     std::string uri_str = oss.str();
 
     Poco::Net::HTTPResponse res; 
-    std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_HEAD, res);
+    std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_GET, res);
+    //std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_HEAD, res);
 
     switch(res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "cache_space_used:: got ok."<< std::endl;
-            std::cout <<"body:: " << body << std::endl;
             break;
         default:
-            std::cout << "cache_space_used:: got not-ok" << std::endl;
+            debug("poco_client::cache_space_used got not-ok");
+            return 0;
     }
 
-    Poco::JSON::Parser parser;
-    Poco::Dynamic::Var parsed_json = parser.parse(body);
-    Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
-
-    Poco::Dynamic::Var val_var = parsed_obj->get("memused");
-    uint64_t val = val_var.convert<Poco::UInt64>();
-
-    std::cout << "cache_spacedused:: memory used: " << val << std::endl;
-
+    // if HTTP_OK:
+    uint64_t val = 0;
+    try {
+        Poco::JSON::Parser parser;
+        Poco::Dynamic::Var parsed_json = parser.parse(body);
+        Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
+        Poco::Dynamic::Var val_var = parsed_obj->get("memused");
+        val = val_var.convert<Poco::UInt64>();
+    } catch (Poco::Exception &e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
     return val;
 }
 
@@ -189,11 +181,11 @@ void Client::destroy_cache(cache_t cache) {
 
     switch (res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            std::cout << "destroy_cache:: got ok, shutting down..." << std::endl;
+            debug("destroy_cache:: got ok, shutting down...");
             std::cout <<"body: " << body << std::endl;
             break;
         default:
-            std::cout << "destroy_cache:: got not-ok" << std::endl;
+            debug("destroy_cache:: got not-ok");
             break;
     }
 }

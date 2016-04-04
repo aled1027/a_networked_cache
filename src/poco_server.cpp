@@ -32,20 +32,7 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
 
 void MyRequestHandler::head(HTTPServerRequest& req, HTTPServerResponse &resp) {
     debug("got a head");
-
-    // simply return a header
-    resp.setStatus(HTTPResponse::HTTP_OK);
-    resp.setContentType("text/html");
-
-
-    //body is a json object with the cache space used
-    uint64_t memused = cache_space_used(cache);
-    std::string memused_str = std::to_string(memused);
-
-    std::ostringstream oss;
-    oss << "{\"memused\": \"" << memused_str << "\"}";
-    std::string body = oss.str();
-
+    std::string body("head");
     ok(req, resp, body);
 }
 
@@ -105,6 +92,18 @@ void MyRequestHandler::get(HTTPServerRequest& req, HTTPServerResponse &resp) {
         // bad request form. send back bad_request
         debug("bad get request");
         bad_request(req, resp);
+    } else if (tokens[1] == "memused") {
+        debug("get request for memsize");
+
+        uint64_t memused = cache_space_used(cache);
+        std::string memused_str = std::to_string(memused);
+        std::cout << "memused_str: " << memused_str << std::endl;
+
+        std::ostringstream oss;
+        oss << "{\"memused\": \"" << memused_str << "\"}";
+        std::string body = oss.str();
+        std::cout << "head body is: " << body << std::endl;
+        ok(req, resp, body);
     } else {
         // get val from cache
         key_type key = (key_type) tokens[1].c_str();

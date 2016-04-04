@@ -134,7 +134,7 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
     //case where the value side being inserted is greater than max_mem
     if (val_size > cache->maxmem){
         printf("Could not store that value. Sorry!\n");
-        printf("cache->maxmem: %d; val_size: %d", cache->maxmem, val_size);
+        printf("cache->maxmem: %" PRIu64 "; val_size: %d", cache->maxmem, val_size);
         return;
     }
 
