@@ -12,6 +12,12 @@
 #include <Poco/Net/DatagramSocket.h>
 #include "Poco/Timestamp.h"
 #include "Poco/DateTimeFormatter.h"
+#include <Poco/Task.h>
+#include <Poco/TaskManager.h>
+#include <Poco/Thread.h>
+#include <Poco/Timespan.h>
+
+
 
 #include "globals.h"
 
@@ -49,39 +55,43 @@ class MyTCPServer : public ServerApplication
         int main(const std::vector<std::string> &);
 };
 
-class MyUDPServer : public Poco::Runnable {
-    bool keep_going;
+class MyUDPServer : public Poco::Task {
     public:
-    virtual void run() {
-        debug("running udp");
-        Poco::Net::SocketAddress sa_recv("localhost", 8081);
-        Poco::Net::DatagramSocket dgs_recv(sa_recv);
+        MyUDPServer(const std::string& name) : Task(name) {}
+        void runTask() {
+            debug("running udp");
+            // setup recv udp socket
+            Poco::Net::SocketAddress sa_recv("localhost", 8081);
+            Poco::Net::DatagramSocket dgs_recv(sa_recv);
+            dgs_recv.setSendTimeout(Poco::Timespan(0,0,0,0,50000));
+            dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,0,50000));
 
-        Poco::Net::SocketAddress sa_send("localhost", 8082);
-        Poco::Net::DatagramSocket dgs_send;
-        dgs_send.connect(sa_send);
+            // setup sending udp socket
+            Poco::Net::SocketAddress sa_send("localhost", 8082);
+            Poco::Net::DatagramSocket dgs_send;
+            dgs_send.connect(sa_send);
+            dgs_send.setSendTimeout(Poco::Timespan(0,0,0,0,50000));
+            dgs_send.setReceiveTimeout(Poco::Timespan(0,0,0,0,50000));
 
-        char buffer[2048];
-        while (true) {
-            Poco::Net::SocketAddress sender;
-            int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
-            buffer[n] = '\0';
-            std::cout << sender.toString() << ": " << buffer << std::endl;
+            char buffer[2048];
+            while (true) {
+                Poco::Net::SocketAddress sender;
+                int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+                buffer[n] = '\0';
+                std::cout << sender.toString() << ": " << buffer << std::endl;
 
-            if (sender.toString() == "shutdown") {
-                return;
+                if (sender.toString() == "shutdown") {
+                    return;
+                }
+
+                Poco::Timestamp now;
+                std::string msg = Poco::DateTimeFormatter::format(now,
+                        "<14>%w %f %H:%M:%S Hello, world!");
+                dgs_send.sendBytes(msg.data(), msg.size());
+                std::cout << "client sent" << std::endl;
             }
-
-
-
-            Poco::Timestamp now;
-            std::string msg = Poco::DateTimeFormatter::format(now,
-                    "<14>%w %f %H:%M:%S Hello, world!");
-            dgs_send.sendBytes(msg.data(), msg.size());
-            std::cout << "client sent" << std::endl;
+            std::cout << "at end!" << std::endl;
         }
-        std::cout << "at end!" << std::endl;
-    }
 };
 
 class Server {

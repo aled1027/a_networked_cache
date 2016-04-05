@@ -225,13 +225,15 @@ int MyTCPServer::main(const std::vector<std::string> &)
 }
 
 void Server::start() {
-    MyUDPServer udp_server;
-    Poco::Thread thread;
-    thread.start(udp_server);
-    tcp_server.start();
-    std::cout << "pre join" << std::endl;
-    thread.join();
-    std::cout << "post join" << std::endl;
+    //MyUDPServer udp_server;
+    //Poco::Thread thread;
+    //thread.start(udp_server);
+    //thread.join();
 
+    Poco::TaskManager task_manager;
+    MyUDPServer* udp_server_task = new MyUDPServer("task1");
+    task_manager.start(udp_server_task); // tm takes ownership
+    tcp_server.start();
+    task_manager.joinAll();
 }
 
