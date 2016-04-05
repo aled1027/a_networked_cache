@@ -14,7 +14,7 @@
 #include <assert.h>
 #include "cache_tests.h"
 #include "network_tests.h"
-
+#include "poco_server.h"
 
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/MulticastSocket.h"
@@ -23,47 +23,67 @@
 #include "Poco/Timestamp.h"
 #include "Poco/DateTimeFormatter.h"
 
-int port = 8080;
-
-int send()
-{
+int send() {
     std::cout << "send" << std::endl;
-    Poco::Net::SocketAddress sa("localhost", port);
+    Poco::Net::SocketAddress sa("localhost", 8081);
     Poco::Net::DatagramSocket dgs;
     dgs.connect(sa);
     Poco::Timestamp now;
     std::string msg = Poco::DateTimeFormatter::format(now,
             "<14>%w %f %H:%M:%S Hello, world!");
     dgs.sendBytes(msg.data(), msg.size());
-    return 0;
-}
-
-int recv()
-{
-    std::cout << "recv" << std::endl;
-    Poco::Net::SocketAddress sa("localhost", port);
-    Poco::Net::DatagramSocket dgs(sa);
-    char buffer[1024];
-    for (;;)
-    {
-        Poco::Net::SocketAddress sender;
-        int n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
-        buffer[n] = '\0';
-        std::cout << sender.toString() << ": " << buffer << std::endl;
-    }
-    return 0;
+    std::cout << "sent" << std::endl;
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
     assert(argc == 2);
     if (argv[1][0] == 's') {
-        recv2();
+        Poco::Net::SocketAddress sa_recv("localhost", 8082);
+        Poco::Net::DatagramSocket dgs_recv(sa_recv);
+
+        Poco::Net::SocketAddress sa_send("localhost", 8081);
+        Poco::Net::DatagramSocket dgs_send;
+        dgs_send.connect(sa_send);
+
+        Poco::Timestamp now;
+        std::string msg = Poco::DateTimeFormatter::format(now,
+                "<14>%w %f %H:%M:%S Hello, world!");
+        dgs_send.sendBytes(msg.data(), msg.size());
+        std::cout << "server sent" << std::endl;
+
+        Poco::Net::SocketAddress sender;
+        char buffer[2048];
+        int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+        buffer[n] = '\0';
+        std::cout << sender.toString() << ": " << buffer << std::endl;
+        std::cout << "server received" << std::endl;
+
     } else {
-        send();
+        Poco::Net::SocketAddress sa_recv("localhost", 8081);
+        Poco::Net::DatagramSocket dgs_recv(sa_recv);
+
+        Poco::Net::SocketAddress sa_send("localhost", 8082);
+        Poco::Net::DatagramSocket dgs_send;
+        dgs_send.connect(sa_send);
+
+        char buffer[2048];
+        while (true) {
+            Poco::Net::SocketAddress sender;
+            int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+            buffer[n] = '\0';
+            std::cout << sender.toString() << ": " << buffer << std::endl;
+
+            Poco::Timestamp now;
+            std::string msg = Poco::DateTimeFormatter::format(now,
+                    "<14>%w %f %H:%M:%S Hello, world!");
+            dgs_send.sendBytes(msg.data(), msg.size());
+            std::cout << "client sent" << std::endl;
+        }
     }
 
-
-
+    //Server s;
+    //s.start();
     //cache_tests();
     //network_tests(argv[1]);
     //go();

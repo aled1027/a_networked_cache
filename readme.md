@@ -21,6 +21,8 @@ Then run `cmake .` to recreate the makefile.
 - boost/asio
 
 ## Resources
+- threading / tasks in poco
+    - http://stackoverflow.com/questions/9909901/stopping-a-pocothread-for-unit-tests
 - https://www.jmarshall.com/easy/http/#whatis
 - https://github.com/eidheim/Simple-Web-Server/blob/master/http_examples.cpp
 - http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/examples/cpp11_examples.html

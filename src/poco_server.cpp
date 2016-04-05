@@ -3,6 +3,13 @@
 #include <vector>
 #include <Poco/Process.h>
 #include <Poco/Net/ServerSocket.h>
+#include "Poco/Net/SocketAddress.h"
+#include "Poco/Net/MulticastSocket.h"
+#include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/DatagramSocket.h>
+#include "Poco/Timestamp.h"
+#include "Poco/DateTimeFormatter.h"
+
 
 #include "poco_server.h"
 #include "globals.h"
@@ -203,13 +210,12 @@ HTTPRequestHandler* MyRequestHandlerFactory::createRequestHandler(const HTTPServ
     return new MyRequestHandler; 
 }
 
-
-void Server::start() {
+void MyTCPServer::start() {
     cache = create_cache(10000);
     run();
 }
 
-int Server::main(const std::vector<std::string> &)
+int MyTCPServer::main(const std::vector<std::string> &)
 {
     HTTPServer s(new MyRequestHandlerFactory, ServerSocket(globals::PORT), new HTTPServerParams);
     s.start();
@@ -218,4 +224,13 @@ int Server::main(const std::vector<std::string> &)
     return Application::EXIT_OK;
 }
 
+void Server::start() {
+    MyUDPServer udp_server;
+    Poco::Thread thread;
+    thread.start(udp_server);
+    tcp_server.start();
+    //udp_server.stop();
+    thread.join();
+
+}
 
