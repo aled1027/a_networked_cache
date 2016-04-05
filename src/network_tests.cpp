@@ -158,13 +158,13 @@ void test_memsize(bool is_client) {
 }
 
 void run_tests(bool is_client) { 
-    test_memsize(is_client); 
-    test_put(is_client); 
+    //test_memsize(is_client); 
+    //test_put(is_client); 
     test_get(is_client);
-    test_delete(is_client);
-    test_shutdown(is_client);
-    test_head(is_client); 
-    test_update(is_client); 
+    //test_delete(is_client);
+    //test_shutdown(is_client);
+    //test_head(is_client); 
+    //test_update(is_client); 
 }
 
 void network_tests(std::string user) {

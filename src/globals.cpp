@@ -10,6 +10,7 @@ namespace globals
     const int PORT = 9090;
     const int UDP_PORT = 9091;
     const char *HOST = "localhost";
+    bool USE_UDP = false;
 }
 
 void print_vector_string(std::vector<std::string> v) {

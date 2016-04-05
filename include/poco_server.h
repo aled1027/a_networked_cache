@@ -54,34 +54,33 @@ class MyUDPServer : public Poco::Runnable {
     public:
     virtual void run() {
         debug("running udp");
-        //keep_going = true;
-        //Poco::Net::SocketAddress sa("localhost", 8081);
-        //Poco::Net::DatagramSocket dgs(sa);
+        Poco::Net::SocketAddress sa_recv("localhost", 8081);
+        Poco::Net::DatagramSocket dgs_recv(sa_recv);
 
-        //char buffer[2048];
-        //while (keep_going) {
-        //    Poco::Net::SocketAddress sender;
-        //    //int n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
-        //    //buffer[n] = '\0';
-        //    //std::cout << sender.toString() << ": " << buffer << std::endl;
+        Poco::Net::SocketAddress sa_send("localhost", 8082);
+        Poco::Net::DatagramSocket dgs_send;
+        dgs_send.connect(sa_send);
 
-        //}
-        
-        Poco::Net::SocketAddress sa2("localhost", 8081);
-        Poco::Net::DatagramSocket dgs2;
-        dgs2.connect(sa2);
-        Poco::Timestamp now;
-        std::string msg = Poco::DateTimeFormatter::format(now,
-                "<14>%w %f %H:%M:%S Hello, world!");
-        dgs2.sendBytes(msg.data(), msg.size());
+        char buffer[2048];
+        while (true) {
+            Poco::Net::SocketAddress sender;
+            int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+            buffer[n] = '\0';
+            std::cout << sender.toString() << ": " << buffer << std::endl;
 
-        std::cout << "sent" << std::endl;
-    }
+            if (sender.toString() == "shutdown") {
+                return;
+            }
 
 
 
-    void stop() {
-        keep_going = false;
+            Poco::Timestamp now;
+            std::string msg = Poco::DateTimeFormatter::format(now,
+                    "<14>%w %f %H:%M:%S Hello, world!");
+            dgs_send.sendBytes(msg.data(), msg.size());
+            std::cout << "client sent" << std::endl;
+        }
+        std::cout << "at end!" << std::endl;
     }
 };
 

@@ -9,7 +9,12 @@
 #include <Poco/JSON/JSON.h>
 #include <Poco/JSON/Parser.h>
 #include <Poco/Dynamic/Var.h>
-
+#include "Poco/Net/SocketAddress.h"
+#include "Poco/Net/MulticastSocket.h"
+#include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/DatagramSocket.h>
+#include "Poco/Timestamp.h"
+#include "Poco/DateTimeFormatter.h"
 #include <iostream>
 
 #include "poco_client.h"
@@ -74,36 +79,61 @@ cache_t Client::create_cache(uint64_t maxmem) {
 }
 
 val_type Client::cache_get(cache_t cache, const uint8_t* key) {
-    std::ostringstream oss;
-    oss << "http://" << cache->host << ":" << cache->port << "/" << key;
-    std::string uri_str = oss.str();
+    if (globals::USE_UDP) {
+        debug("client::cache_get with udp");
+        Poco::Net::SocketAddress sa_send("localhost", 8081);
+        Poco::Net::DatagramSocket dgs_send;
+        dgs_send.connect(sa_send);
 
-    // res will contain header information 
-    // body will contain the body of the response. (white spaces are removed)
-    Poco::Net::HTTPResponse res; 
-    std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_GET, res);
+        Poco::Net::SocketAddress sa_recv("localhost", 8082);
+        Poco::Net::DatagramSocket dgs_recv(sa_recv);
 
-    switch (res.getStatus()) {
-        case Poco::Net::HTTPResponse::HTTP_OK:
-            debug("got ok");
-            break;
-        default:
-            debug("got not ok");
-            break;
+        Poco::Timestamp now;
+        std::string msg = Poco::DateTimeFormatter::format(now,
+                "<14>%w %f %H:%M:%S Hello, world!");
+        dgs_send.sendBytes(msg.data(), msg.size());
+        std::cout << "client sent" << std::endl;
+
+        Poco::Net::SocketAddress sender;
+        char buffer[2048];
+        int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+        buffer[n] = '\0';
+        std::cout << sender.toString() << ": " << buffer << std::endl;
+        std::cout << "client received" << std::endl;
+        return  NULL;
+    } else {
+        debug("client::cache_get with tcp");
+        std::ostringstream oss;
+        oss << "http://" << cache->host << ":" << cache->port << "/" << key;
+        std::string uri_str = oss.str();
+
+        // res will contain header information 
+        // body will contain the body of the response. (white spaces are removed)
+        Poco::Net::HTTPResponse res; 
+        std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_GET, res);
+
+        switch (res.getStatus()) {
+            case Poco::Net::HTTPResponse::HTTP_OK:
+                debug("got ok");
+                break;
+            default:
+                debug("got not ok");
+                break;
+        }
+
+        Poco::JSON::Parser parser;
+        Poco::Dynamic::Var parsed_json = parser.parse(body);
+        Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
+
+        Poco::Dynamic::Var val_var = parsed_obj->get("value");
+        std::string val = val_var.convert<std::string>();
+
+        // TODO maybe a memory leak. I think that this class owns the memory
+        char *val_c = (char *)val.c_str();            
+        char *buf = (char *) calloc(strlen(val_c) + 1, 1);
+        memcpy(buf,val_c,strlen(val_c));
+        return buf;
     }
-
-    Poco::JSON::Parser parser;
-    Poco::Dynamic::Var parsed_json = parser.parse(body);
-    Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
-
-    Poco::Dynamic::Var val_var = parsed_obj->get("value");
-    std::string val = val_var.convert<std::string>();
-
-    // TODO maybe a memory link. I think that this class owns the memory
-    char *val_c = (char *)val.c_str();            
-    char *buf = (char *) calloc(strlen(val_c) + 1, 1);
-    memcpy(buf,val_c,strlen(val_c));
-    return buf;
 }
 
 void Client::cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size){
@@ -137,7 +167,6 @@ void Client::cache_delete(cache_t cache, key_type key) {
             debug("cache_delete:: got not-ok");
             break;
     }
-
 }
 
 uint64_t Client::cache_space_used(cache_t cache){

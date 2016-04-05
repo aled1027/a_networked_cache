@@ -229,8 +229,9 @@ void Server::start() {
     Poco::Thread thread;
     thread.start(udp_server);
     tcp_server.start();
-    //udp_server.stop();
+    std::cout << "pre join" << std::endl;
     thread.join();
+    std::cout << "post join" << std::endl;
 
 }
 

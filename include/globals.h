@@ -16,6 +16,7 @@ namespace globals
     extern const int PORT;
     extern const int UDP_PORT;
     extern const char* HOST;
+    extern bool USE_UDP;
 }
 
 void print_vector_string(std::vector<std::string> v);
