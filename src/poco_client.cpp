@@ -96,32 +96,33 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
     std::string body;
     if (globals::USE_UDP) {
         debug("client::cache_get with udp");
-        Poco::Net::SocketAddress sa_send("localhost", globals::UDP_PORT1);
-        Poco::Net::DatagramSocket dgs_send;
-        dgs_send.connect(sa_send);
 
-        Poco::Net::SocketAddress sa_recv("localhost", globals::UDP_PORT2);
-        Poco::Net::DatagramSocket dgs_recv(sa_recv);
-        dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
+        // create a socket addr to server, create dgs for our socket, update dgs timeout
+        Poco::Net::SocketAddress server(cache->host, cache->udp_port);
+        Poco::Net::DatagramSocket dgs;
+        dgs.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
 
         std::ostringstream oss;
         oss << "/" << key;
         std::string msg = oss.str();
-        dgs_send.sendBytes(msg.data(), msg.size());
-        std::cout << "client sent" << std::endl;
+        dgs.sendTo(msg.data(), msg.size(), server);
+        std::cout << "client sent: " << msg << std::endl;
 
-        Poco::Net::SocketAddress sender;
         char buffer[2048];
 
         int n = 0;
         try {
-            n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+            n = dgs.receiveFrom(buffer, sizeof(buffer)-1, server);
+            buffer[n] = '\0';
+            std::cout << "client::cache_get server: " << server.toString() << " response: " << buffer << std::endl;
         } catch (Poco::Exception &e) {
             return NULL;
         }
 
         buffer[n] = '\0';
         body = std::string(buffer);
+        dgs.close();
+
     } else {
         debug("client::cache_get with tcp");
         std::ostringstream oss;

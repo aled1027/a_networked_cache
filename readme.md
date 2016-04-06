@@ -20,7 +20,7 @@ Then run `cmake .` to recreate the makefile.
     * In one terminal, `make run_server`
     * In one terminal, `make run_client` 
     * output on client-side confirms tests and shows the results of timing 1000 get requests with UDP
-      * Avg time on @ifjorissen's MBP: 1.24ms
+      * Avg time on @ifjorissen's MBP: .63ms
   * change globals::USE_UDP to false
     * In one terminal, `make run_server`
     * In one terminal, `make run_client` 

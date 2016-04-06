@@ -66,17 +66,11 @@ class MyUDPServer : public Poco::Task {
         void runTask() {
             debug("MyUDPServer::runTask");
 
-            // setup recv udp socket
-            Poco::Net::SocketAddress sa_recv(globals::HOST, globals::UDP_PORT1);
-            Poco::Net::DatagramSocket dgs_recv(sa_recv);
-            dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
-
-            // setup sending udp socket
-            Poco::Net::SocketAddress sa_send(globals::HOST, globals::UDP_PORT2);
-            Poco::Net::DatagramSocket dgs_send;
-            dgs_send.connect(sa_send);
-            dgs_send.setSendTimeout(Poco::Timespan(0,0,0,0,5000));
-            dgs_send.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
+            //create socket address, bind to dgs, set timeouts
+            Poco::Net::SocketAddress sa(globals::HOST, globals::UDP_PORT1);
+            Poco::Net::DatagramSocket dgs(sa, true);
+            dgs.setSendTimeout(Poco::Timespan(0,0,0,0,5000));
+            dgs.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
 
             char buffer[2048];
             while (true) {
@@ -91,7 +85,9 @@ class MyUDPServer : public Poco::Task {
                 Poco::Net::SocketAddress sender;
                 int n = 0;
                 try {
-                    n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+                    n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
+                    buffer[n] = '\0';
+                    std::cout << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
                 }
@@ -113,6 +109,11 @@ class MyUDPServer : public Poco::Task {
                     // if key is not in cache
                     debug("key not in cache");
                     // do nothing...
+                    std::ostringstream oss;
+                    oss << "{\"key\": \"" << key << "\", \"value\": \"" << NULL << "\"}";
+                    std::string msg = oss.str();
+                    dgs.sendTo(msg.data(), msg.size(), sender);
+                    // return;
                 } else {
                     // otherwise key is in cache
                     // convert val_type (i.e void*) into a std::string
@@ -127,7 +128,8 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream oss2;
                     oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
                     std::string msg = oss2.str();
-                    dgs_send.sendBytes(msg.data(), msg.size());
+                    dgs.sendTo(msg.data(), msg.size(), sender);
+                    // return;
                 }
             }
         }
