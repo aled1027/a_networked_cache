@@ -55,7 +55,6 @@ class MyTCPServer : public ServerApplication
 {
     public:
         void start();
-        void start_udp();
 
     protected:
         int main(const std::vector<std::string> &);
@@ -101,7 +100,6 @@ class MyUDPServer : public Poco::Task {
                 buffer[n] = '\0';
                 std::string key_str(buffer);
                 key_str.erase(0,1);
-                std::cout << sender.toString() << ": " << key_str << std::endl;
 
                 // get key from cache
                 key_type key;
@@ -132,7 +130,6 @@ class MyUDPServer : public Poco::Task {
                     dgs_send.sendBytes(msg.data(), msg.size());
                 }
             }
-            std::cout << "at end!" << std::endl;
         }
 };
 
@@ -223,12 +220,12 @@ void MyRequestHandler::get(HTTPServerRequest& req, HTTPServerResponse &resp) {
 
         uint64_t memused = cache_space_used(cache);
         std::string memused_str = std::to_string(memused);
-        std::cout << "memused_str: " << memused_str << std::endl;
+        //std::cout << "memused_str: " << memused_str << std::endl;
 
         std::ostringstream oss;
         oss << "{\"memused\": \"" << memused_str << "\"}";
         std::string body = oss.str();
-        std::cout << "head body is: " << body << std::endl;
+        //std::cout << "head body is: " << body << std::endl;
         ok(req, resp, body);
     } else {
         // get val from cache

@@ -82,6 +82,16 @@ cache_t Client::create_cache(uint64_t maxmem) {
 }
 
 val_type Client::cache_get(cache_t cache, const uint8_t* key) {
+
+    // If cach_get is using UDP, then sends UDP request to server, who replies with UDP
+    // The UDP puts the payload of the received UDP packet into body, which is processed
+    // at the bottom of the function.
+    //
+    // Likewise, the TCP connection requests a key with TCP and puts the payload 
+    // into the std::string body to be processed at the bottom
+
+    // goal of these conditions is to fill std::string body
+    std::string body;
     if (globals::USE_UDP) {
         debug("client::cache_get with udp");
         Poco::Net::SocketAddress sa_send("localhost", globals::UDP_PORT1);
@@ -91,10 +101,6 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         Poco::Net::SocketAddress sa_recv("localhost", globals::UDP_PORT2);
         Poco::Net::DatagramSocket dgs_recv(sa_recv);
         dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
-
-        //Poco::Timestamp now;
-        //std::string msg = Poco::DateTimeFormatter::format(now,
-        //        "<14>%w %f %H:%M:%S Hello, world!");
 
         std::ostringstream oss;
         oss << "/" << key;
@@ -113,9 +119,7 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         }
 
         buffer[n] = '\0';
-        std::cout << sender.toString() << ": " << buffer << std::endl;
-        std::cout << "client received" << std::endl;
-        return  NULL;
+        body = std::string(buffer);
     } else {
         debug("client::cache_get with tcp");
         std::ostringstream oss;
@@ -125,7 +129,7 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         // res will contain header information 
         // body will contain the body of the response. (white spaces are removed)
         Poco::Net::HTTPResponse res; 
-        std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_GET, res);
+        body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_GET, res);
 
         switch (res.getStatus()) {
             case Poco::Net::HTTPResponse::HTTP_OK:
@@ -135,20 +139,21 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
                 debug("got not ok");
                 break;
         }
-
-        Poco::JSON::Parser parser;
-        Poco::Dynamic::Var parsed_json = parser.parse(body);
-        Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
-
-        Poco::Dynamic::Var val_var = parsed_obj->get("value");
-        std::string val = val_var.convert<std::string>();
-
-        // TODO maybe a memory leak. I think that this class owns the memory
-        char *val_c = (char *)val.c_str();            
-        char *buf = (char *) calloc(strlen(val_c) + 1, 1);
-        memcpy(buf,val_c,strlen(val_c));
-        return buf;
     }
+
+    // body is filled. parse and do things with its data.
+    Poco::JSON::Parser parser;
+    Poco::Dynamic::Var parsed_json = parser.parse(body);
+    Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
+
+    Poco::Dynamic::Var val_var = parsed_obj->get("value");
+    std::string val = val_var.convert<std::string>();
+
+    // TODO maybe a memory leak. I think that this class owns the memory
+    char *val_c = (char *)val.c_str();            
+    char *buf = (char *) calloc(strlen(val_c) + 1, 1);
+    memcpy(buf,val_c,strlen(val_c));
+    return buf;
 }
 
 void Client::cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size){

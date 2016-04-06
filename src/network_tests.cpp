@@ -41,7 +41,7 @@ void test_get(bool is_client) {
         uint8_t val[6] = "world";
         c.cache_set(cache, key, val, 6);
         uint8_t *res = (uint8_t *) c.cache_get(cache, key);
-        //assert(!(strcmp((const char *)val, (const char *)res)) && "get test failed");
+        assert(!(strcmp((const char *)val, (const char *)res)) && "get test failed");
         c.destroy_cache(cache);
     } else {
         Server s;
@@ -155,13 +155,13 @@ void test_memsize(bool is_client) {
 }
 
 void run_tests(bool is_client) { 
-    //test_memsize(is_client); 
-    //test_put(is_client); 
+    test_memsize(is_client); 
+    test_put(is_client); 
     test_get(is_client);
-    //test_delete(is_client);
-    //test_shutdown(is_client);
-    //test_head(is_client); 
-    //test_update(is_client); 
+    test_delete(is_client);
+    test_shutdown(is_client);
+    test_head(is_client); 
+    test_update(is_client); 
 }
 
 void network_tests(std::string user) {
