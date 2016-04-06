@@ -15,6 +15,18 @@ If a new cpp file is added, it needs to be added to CMakeLists.txt.
 Where should be clear when you look at the file.
 Then run `cmake .` to recreate the makefile.
 
+##Testing
+  * change globals::USE_UDP to true
+    * In one terminal, `make run_server`
+    * In one terminal, `make run_client` 
+    * output on client-side confirms tests and shows the results of timing 1000 get requests with UDP
+      * Avg time on @ifjorissen's MBP: 1.24ms
+  * change globals::USE_UDP to false
+    * In one terminal, `make run_server`
+    * In one terminal, `make run_client` 
+    * output on client-side confirms tests and shows the results of timing 1000 get requests with TCP
+      * Avg time on @ifjorissen's MBP: .8ms
+
 ## New things we are trying
 - cplusplus
 - cmake

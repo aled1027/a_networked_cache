@@ -1,6 +1,8 @@
 #include "network_tests.h"
+#include "getRealTime.h"
 
 #include <unistd.h> // usleep
+#include <iomanip>
 
 void my_assert(bool b, std::string str) {
     if (!b) {
@@ -164,6 +166,62 @@ void run_tests(bool is_client) {
     test_update(is_client); 
 }
 
+void time_get(bool is_client) {
+    std::cout << "Running time_get test" << std::endl;
+    if (is_client) {
+        call_sleep();
+        int num_requests = 1000;
+        Client c;
+        cache_t cache = c.create_cache(15000);
+        uint8_t key[6] = "hello";
+        uint8_t val[6] = "world";
+        c.cache_set(cache, key, val, 6);
+
+        // create one checksum to hold the first character of the response
+        // and another which is populated in the following for-loop by the first char of val
+        uint8_t chk_sum[num_requests];
+        uint8_t chk_sum_correct[num_requests];
+
+        //create the "correct" checksum
+        for (int i = 0; i < num_requests; i++){
+           chk_sum_correct[i] = val[0];
+        }
+
+        // start the timer
+        double start_time = getRealTime();
+        for (int i = 0; i < num_requests; i++){
+            uint8_t *res = (uint8_t *) c.cache_get(cache, key);
+            chk_sum[i] = res[0];
+        }
+        double end_time = getRealTime();
+
+        //get avg request time in ns
+        double avg_get_time = (end_time-start_time)/(double)num_requests;
+
+        //make sure the checksums are equivalent
+        for (int i = 0; i < num_requests; i++){
+            assert(chk_sum[i] == chk_sum_correct[i]);
+        }
+
+        std::cout << std::setprecision(18)<< std::setw(18) << "start_time time: "<< start_time << " end_time: " << end_time << std::endl;
+        std::cout << "average get request time (ns): "<< avg_get_time << "\n" << std::endl;
+
+        //cleanup
+        c.destroy_cache(cache);
+    }
+
+    else {
+        Server s;
+        s.start();
+    }
+    std::cout << "... done\n" << std::endl;
+}
+
+
+void run_time_tests(bool is_client) {
+    time_get(is_client);
+}
+
 void network_tests(std::string user) {
     std::cout << "****************************" << std::endl;
     std::cout << "~  Running network_tests  ~" << std::endl;
@@ -174,4 +232,18 @@ void network_tests(std::string user) {
     } else {
         run_tests(false);
     }
+
+    std::cout << "********************************" << std::endl;
+    std::cout << "~  Running network_time_tests  ~" << std::endl;
+    std::cout << "********************************\n" << std::endl;
+
+    if (user == "client") {
+        run_time_tests(true);
+    } else {
+        run_time_tests(false);
+    }
+
+    std::cout << "********************************" << std::endl;
+    std::cout << "~  Finished running all tests  ~" << std::endl;
+    std::cout << "********************************\n" << std::endl;
 }

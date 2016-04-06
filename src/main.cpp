@@ -21,6 +21,5 @@ int main(int argc, char* argv[]) {
     //cache_tests();
     network_tests(argv[1]);
 
-
     return 0;    
 }
