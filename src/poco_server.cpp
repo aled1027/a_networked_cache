@@ -99,13 +99,37 @@ class MyUDPServer : public Poco::Task {
 
                 // if a message is successfully received, respond to it
                 buffer[n] = '\0';
-                std::cout << sender.toString() << ": " << buffer << std::endl;
-                if (n > 0) {
-                    Poco::Timestamp now;
-                    std::string msg = Poco::DateTimeFormatter::format(now,
-                            "<14>%w %f %H:%M:%S Hello, world!");
+                std::string key_str(buffer);
+                key_str.erase(0,1);
+                std::cout << sender.toString() << ": " << key_str << std::endl;
+
+                // get key from cache
+                key_type key;
+                val_type val;
+                uint32_t val_size;
+
+                key = (key_type) key_str.c_str();
+                val = cache_get(cache, key, &val_size);
+
+                if (!val) {
+                    // if key is not in cache
+                    debug("key not in cache");
+                    // do nothing...
+                } else {
+                    // otherwise key is in cache
+                    // convert val_type (i.e void*) into a std::string
+                    debug("successful get");
+
+                    char new_val[val_size + 1];
+                    memcpy(new_val, val, val_size);
+                    new_val[val_size] = '\0';
+                    std::string str_val = std::string(new_val);
+
+                    // return response with uri:{key: k, value: v } 
+                    std::ostringstream oss2;
+                    oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
+                    std::string msg = oss2.str();
                     dgs_send.sendBytes(msg.data(), msg.size());
-                    std::cout << "client sent" << std::endl;
                 }
             }
             std::cout << "at end!" << std::endl;
