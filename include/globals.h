@@ -13,8 +13,9 @@ void debug(std::string s);
 
 namespace globals
 {
-    extern const int PORT;
-    extern const int UDP_PORT;
+    extern const int TCP_PORT;
+    extern const int UDP_PORT1;
+    extern const int UDP_PORT2;
     extern const char* HOST;
     extern bool USE_UDP;
 }

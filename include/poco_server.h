@@ -59,36 +59,48 @@ class MyUDPServer : public Poco::Task {
     public:
         MyUDPServer(const std::string& name) : Task(name) {}
         void runTask() {
-            debug("running udp");
+            debug("MyUDPServer::runTask");
+
             // setup recv udp socket
-            Poco::Net::SocketAddress sa_recv("localhost", 8081);
+            Poco::Net::SocketAddress sa_recv(globals::HOST, globals::UDP_PORT1);
             Poco::Net::DatagramSocket dgs_recv(sa_recv);
-            dgs_recv.setSendTimeout(Poco::Timespan(0,0,0,0,50000));
-            dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,0,50000));
+            dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
 
             // setup sending udp socket
-            Poco::Net::SocketAddress sa_send("localhost", 8082);
+            Poco::Net::SocketAddress sa_send(globals::HOST, globals::UDP_PORT2);
             Poco::Net::DatagramSocket dgs_send;
             dgs_send.connect(sa_send);
-            dgs_send.setSendTimeout(Poco::Timespan(0,0,0,0,50000));
-            dgs_send.setReceiveTimeout(Poco::Timespan(0,0,0,0,50000));
+            dgs_send.setSendTimeout(Poco::Timespan(0,0,0,0,5000));
+            dgs_send.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
 
             char buffer[2048];
             while (true) {
-                Poco::Net::SocketAddress sender;
-                int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
-                buffer[n] = '\0';
-                std::cout << sender.toString() << ": " << buffer << std::endl;
-
-                if (sender.toString() == "shutdown") {
+                // if thread is cancelled from outside, return.
+                if (isCancelled()) {
                     return;
                 }
 
-                Poco::Timestamp now;
-                std::string msg = Poco::DateTimeFormatter::format(now,
-                        "<14>%w %f %H:%M:%S Hello, world!");
-                dgs_send.sendBytes(msg.data(), msg.size());
-                std::cout << "client sent" << std::endl;
+                // try to receive a message.
+                // if it fails with a poco exception - aka a time out
+                // go to beginning of loop
+                Poco::Net::SocketAddress sender;
+                int n = 0;
+                try {
+                    n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+                } catch (Poco::Exception &e) {
+                    continue;
+                }
+
+                // if a message is successfully received, respond to it
+                buffer[n] = '\0';
+                std::cout << sender.toString() << ": " << buffer << std::endl;
+                if (n > 0) {
+                    Poco::Timestamp now;
+                    std::string msg = Poco::DateTimeFormatter::format(now,
+                            "<14>%w %f %H:%M:%S Hello, world!");
+                    dgs_send.sendBytes(msg.data(), msg.size());
+                    std::cout << "client sent" << std::endl;
+                }
             }
             std::cout << "at end!" << std::endl;
         }

@@ -7,10 +7,11 @@ void debug(std::string s) {
 
 namespace globals
 {
-    const int PORT = 9090;
-    const int UDP_PORT = 9091;
+    const int TCP_PORT = 9090;
+    const int UDP_PORT1 = 8081;
+    const int UDP_PORT2 = 8082;
     const char *HOST = "localhost";
-    bool USE_UDP = false;
+    bool USE_UDP = true;
 }
 
 void print_vector_string(std::vector<std::string> v) {

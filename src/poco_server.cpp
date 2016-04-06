@@ -217,7 +217,7 @@ void MyTCPServer::start() {
 
 int MyTCPServer::main(const std::vector<std::string> &)
 {
-    HTTPServer s(new MyRequestHandlerFactory, ServerSocket(globals::PORT), new HTTPServerParams);
+    HTTPServer s(new MyRequestHandlerFactory, ServerSocket(globals::TCP_PORT), new HTTPServerParams);
     s.start();
     waitForTerminationRequest();  // wait for CTRL-C or kill
     s.stopAll();
@@ -225,15 +225,19 @@ int MyTCPServer::main(const std::vector<std::string> &)
 }
 
 void Server::start() {
-    //MyUDPServer udp_server;
-    //Poco::Thread thread;
-    //thread.start(udp_server);
-    //thread.join();
+    if (globals::USE_UDP) {
+        debug("initializing server with TCP and UPD");
+        Poco::TaskManager task_manager;
+        MyUDPServer* udp_server_task = new MyUDPServer("task1");
+        task_manager.start(udp_server_task); // tm takes ownership
 
-    Poco::TaskManager task_manager;
-    MyUDPServer* udp_server_task = new MyUDPServer("task1");
-    task_manager.start(udp_server_task); // tm takes ownership
-    tcp_server.start();
-    task_manager.joinAll();
+        tcp_server.start();
+
+        task_manager.cancelAll();
+        task_manager.joinAll();
+    } else {
+        debug("initializing server with TCP");
+        tcp_server.start();
+    }
 }
 

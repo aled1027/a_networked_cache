@@ -55,7 +55,7 @@ cache_t Client::create_cache(uint64_t maxmem) {
     //create a cache object
     cache_t cache = (cache_t)calloc(1, sizeof(cache_t));
     cache->host = globals::HOST;
-    cache->port = globals::PORT;
+    cache->port = globals::TCP_PORT;
 
     //form the request
     std::ostringstream oss;
@@ -81,22 +81,31 @@ cache_t Client::create_cache(uint64_t maxmem) {
 val_type Client::cache_get(cache_t cache, const uint8_t* key) {
     if (globals::USE_UDP) {
         debug("client::cache_get with udp");
-        Poco::Net::SocketAddress sa_send("localhost", 8081);
+        Poco::Net::SocketAddress sa_send("localhost", globals::UDP_PORT1);
         Poco::Net::DatagramSocket dgs_send;
         dgs_send.connect(sa_send);
 
-        Poco::Net::SocketAddress sa_recv("localhost", 8082);
+        Poco::Net::SocketAddress sa_recv("localhost", globals::UDP_PORT2);
         Poco::Net::DatagramSocket dgs_recv(sa_recv);
+        dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
 
         Poco::Timestamp now;
         std::string msg = Poco::DateTimeFormatter::format(now,
                 "<14>%w %f %H:%M:%S Hello, world!");
+        //std::string msg = "/key";
         dgs_send.sendBytes(msg.data(), msg.size());
         std::cout << "client sent" << std::endl;
 
         Poco::Net::SocketAddress sender;
         char buffer[2048];
-        int n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+
+        int n = 0;
+        try {
+            n = dgs_recv.receiveFrom(buffer, sizeof(buffer)-1, sender);
+        } catch (Poco::Exception &e) {
+            return NULL;
+        }
+
         buffer[n] = '\0';
         std::cout << sender.toString() << ": " << buffer << std::endl;
         std::cout << "client received" << std::endl;
