@@ -1,3 +1,5 @@
+
+
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
 #include <Poco/Net/HTTPRequestHandler.h>
@@ -15,6 +17,7 @@
 #include <Poco/Net/DatagramSocket.h>
 #include "Poco/Timestamp.h"
 #include "Poco/DateTimeFormatter.h"
+
 #include <iostream>
 
 #include "poco_client.h"
@@ -89,10 +92,13 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         Poco::Net::DatagramSocket dgs_recv(sa_recv);
         dgs_recv.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
 
-        Poco::Timestamp now;
-        std::string msg = Poco::DateTimeFormatter::format(now,
-                "<14>%w %f %H:%M:%S Hello, world!");
-        //std::string msg = "/key";
+        //Poco::Timestamp now;
+        //std::string msg = Poco::DateTimeFormatter::format(now,
+        //        "<14>%w %f %H:%M:%S Hello, world!");
+
+        std::ostringstream oss;
+        oss << "/" << key;
+        std::string msg = oss.str();
         dgs_send.sendBytes(msg.data(), msg.size());
         std::cout << "client sent" << std::endl;
 
