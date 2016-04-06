@@ -19,6 +19,7 @@
 #include <Poco/Task.h>
 #include <Poco/TaskManager.h>
 #include <Poco/Process.h>
+#include <Poco/URI.h>
 
 #include "globals.h"
 #include "cache.h"
@@ -87,33 +88,39 @@ class MyUDPServer : public Poco::Task {
                 try {
                     n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
                     buffer[n] = '\0';
-                    std::cout << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer << std::endl;
+
+                    std::ostringstream debug_recv;
+                    debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
+                    debug(debug_recv.str());
+
                 } catch (Poco::Exception &e) {
                     continue;
                 }
 
                 // if a message is successfully received, respond to it
-                buffer[n] = '\0';
-                std::string key_str(buffer);
-                key_str.erase(0,1);
+                std::string decoded_uri;
+                Poco::URI::decode(buffer, decoded_uri);
+                std::vector<std::string> tokens = string_split(decoded_uri, '/');
+                if (tokens.size() != 2 || tokens[0] != "") {
+                    debug("bad request");
+                }
 
                 // get key from cache
-                key_type key;
+                // key_type key;
                 val_type val;
                 uint32_t val_size;
-
-                key = (key_type) key_str.c_str();
+                key_type key = (key_type) tokens[1].c_str();
                 val = cache_get(cache, key, &val_size);
 
                 if (!val) {
                     // if key is not in cache
                     debug("key not in cache");
-                    // do nothing...
+                    // do nothing...? or return "NULL" (empty) value
                     std::ostringstream oss;
-                    oss << "{\"key\": \"" << key << "\", \"value\": \"" << NULL << "\"}";
+                    oss << "{\"key\": \"" << key << "\", \"value\": \"" << "NULL" << "\"}";
                     std::string msg = oss.str();
                     dgs.sendTo(msg.data(), msg.size(), sender);
-                    // return;
+                   
                 } else {
                     // otherwise key is in cache
                     // convert val_type (i.e void*) into a std::string
@@ -129,7 +136,7 @@ class MyUDPServer : public Poco::Task {
                     oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
                     std::string msg = oss2.str();
                     dgs.sendTo(msg.data(), msg.size(), sender);
-                    // return;
+                    
                 }
             }
         }
@@ -167,7 +174,10 @@ void MyRequestHandler::put(HTTPServerRequest& req, HTTPServerResponse &resp) {
     // parse uri for format.
     // should be "/<key>/<value>"
     std::string uri = req.getURI();
-    std::vector<std::string> tokens = string_split(uri, '/');
+    std::string decoded_uri;
+    Poco::URI::decode(uri, decoded_uri);
+
+    std::vector<std::string> tokens = string_split(decoded_uri, '/');
     if (tokens.size() != 3 || tokens[0] != "") {
         debug("bad put request");
         bad_request(req, resp);
@@ -192,7 +202,10 @@ void MyRequestHandler::handle_delete(HTTPServerRequest& req, HTTPServerResponse 
 
     // parse input for "/<key>"
     std::string uri = req.getURI();
-    std::vector<std::string> tokens = string_split(uri, '/');
+    std::string decoded_uri;
+    Poco::URI::decode(uri, decoded_uri);
+
+    std::vector<std::string> tokens = string_split(decoded_uri, '/');
     if (tokens.size() != 2 || tokens[0] != "") {
         // bad request form. send back bad_request
         debug("bad get request");
@@ -212,7 +225,10 @@ void MyRequestHandler::get(HTTPServerRequest& req, HTTPServerResponse &resp) {
     // parse uri for format.
     // should be "/<key>/<value>"
     std::string uri = req.getURI();
-    std::vector<std::string> tokens = string_split(uri, '/');
+    std::string decoded_uri;
+    Poco::URI::decode(uri, decoded_uri);
+
+    std::vector<std::string> tokens = string_split(decoded_uri, '/');
     if (tokens.size() != 2 || tokens[0] != "") {
         // bad request form. send back bad_request
         debug("bad get request");
@@ -249,9 +265,15 @@ void MyRequestHandler::get(HTTPServerRequest& req, HTTPServerResponse &resp) {
             new_val[val_size] = '\0';
             std::string str_val = std::string(new_val);
 
+            // uri encoding currently assumes that spaces are the only reserved char
+            std::string encoded_val;
+            std::string encoded_key;
+            Poco::URI::encode(tokens[1], "", encoded_key);
+            Poco::URI::encode(str_val, "", encoded_val);
+            
             // return response with uri:{key: k, value: v } 
             std::ostringstream oss;
-            oss << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
+            oss << "{\"key\": \"" << encoded_key << "\", \"value\": \"" << encoded_val << "\"}";
             std::string body = oss.str();
             ok(req, resp, body);
         }

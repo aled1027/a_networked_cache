@@ -25,7 +25,7 @@ Then run `cmake .` to recreate the makefile.
     * In one terminal, `make run_server`
     * In one terminal, `make run_client` 
     * output on client-side confirms tests and shows the results of timing 1000 get requests with TCP
-      * Avg time on @ifjorissen's MBP: .8ms
+      * Avg time on @ifjorissen's MBP: .9ms
 
 ## New things we are trying
 - cplusplus

@@ -19,6 +19,7 @@
 #include "Poco/DateTimeFormatter.h"
 
 #include <iostream>
+#include <iomanip>
 
 #include "poco_client.h"
 
@@ -103,10 +104,14 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         dgs.setReceiveTimeout(Poco::Timespan(0,0,0,1,0));
 
         std::ostringstream oss;
-        oss << "/" << key;
-        std::string msg = oss.str();
+        oss << "http://" << cache->host << ":" << cache->udp_port << "/" << key;
+        Poco::URI uri(oss.str());
+        std::string msg(uri.getPathAndQuery());
+
         dgs.sendTo(msg.data(), msg.size(), server);
-        std::cout << "client sent: " << msg << std::endl;
+        std::ostringstream debug_sent;
+        debug_sent << "client sent: " << msg;
+        debug(debug_sent.str());
 
         char buffer[2048];
 
@@ -114,7 +119,9 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
         try {
             n = dgs.receiveFrom(buffer, sizeof(buffer)-1, server);
             buffer[n] = '\0';
-            std::cout << "client::cache_get server: " << server.toString() << " response: " << buffer << std::endl;
+            std::ostringstream debug_recv;
+            debug_recv << "client::cache_get server: " << server.toString() << " response: " << buffer;
+            debug(debug_recv.str());
         } catch (Poco::Exception &e) {
             return NULL;
         }
@@ -150,7 +157,10 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
     Poco::JSON::Object::Ptr parsed_obj = parsed_json.extract<Poco::JSON::Object::Ptr>();
 
     Poco::Dynamic::Var val_var = parsed_obj->get("value");
-    std::string val = val_var.convert<std::string>();
+    std::string encoded_val = val_var.convert<std::string>();
+    std::string val;
+    Poco::URI::decode(encoded_val, val);
+
 
     // TODO maybe a memory leak. I think that this class owns the memory
     char *val_c = (char *)val.c_str();            
@@ -167,10 +177,10 @@ void Client::cache_set(cache_t cache, key_type key, val_type val, uint32_t val_s
     std::string body = send(cache, uri_str, Poco::Net::HTTPRequest::HTTP_PUT, res);
     switch(res.getStatus()) {
         case Poco::Net::HTTPResponse::HTTP_OK:
-            debug("got ok");
+            debug("cache_set:: got ok");
             break;
         default:
-            debug("got not ok");
+            debug("cache_set:: got not ok");
             break;
     }
 }

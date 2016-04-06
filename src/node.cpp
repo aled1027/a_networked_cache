@@ -51,10 +51,11 @@ void set_prev(node_t *node, node_t *prev_node)
 static void print_key(key_type key)
 {
     uint32_t i = 0;
-    while (key[i]) {
-        printf("%" PRIu32 " ", key[i]);
-        ++i;
-    }
+    // while (key[i]) {
+    //     printf("%" PRIu32 " ", key[i]);
+    //     ++i;
+    // }
+    printf("%s\n", key);
 }
 
 void rep_node(node_t *node)
@@ -62,9 +63,10 @@ void rep_node(node_t *node)
     printf("key: ");
     print_key(node->key);
     printf(", value: ");
-    for (uint32_t i = 0; i < node->val_size; i++) {
-        printf("%" PRIu8 ", ", ((uint8_t*) node->val)[i]);
-    }
+    printf("%s\n", (uint8_t*) node->val);
+    // for (uint32_t i = 0; i < node->val_size; i++) {
+    //     printf("%" PRIu8 ", ", ((uint8_t*) node->val)[i]);
+    // }
     printf("\n");
 }
 
