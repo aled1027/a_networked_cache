@@ -42,12 +42,12 @@ To test the average GET request time we set an item in the cache, and attempted 
 On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request - that is, UDP showed a 33% improvement in request speed. To replicate this, see the Testing section.
 
 ##Testing
-  * change globals::USE_UDP to true
+  * change `globals::USE_UDP` to true
     * In one terminal, `make run_server`
     * In one terminal, `make run_client` 
     * output on client-side confirms tests and shows the results of timing 1000 get requests with UDP
       * Avg time on @ifjorissen's MBP: .63ms
-  * change globals::USE_UDP to false
+  * change `globals::USE_UDP` to false
     * In one terminal, `make run_server`
     * In one terminal, `make run_client` 
     * output on client-side confirms tests and shows the results of timing 1000 get requests with TCP
