@@ -152,7 +152,7 @@ void test_head(bool is_client) {
         c.cache_set(cache, key_2, val_2, 16);
         actual_mem_used += strlen((char*) val_2);
 
-        //we inserted two items, combined value size is 22, no evictions expected
+        //we inserted two items, no evictions expected
         uint64_t res_mem_used = c.cache_space_used(cache);
 
         my_assert(actual_mem_used == res_mem_used, "memory used is not correct");
@@ -178,16 +178,6 @@ void test_memsize(bool is_client) {
     std::cout << "... done\n" << std::endl;
 }
 
-void run_tests(bool is_client) { 
-    test_memsize(is_client); 
-    test_put(is_client); 
-    test_get(is_client);
-    test_get_large_val(is_client);
-    test_delete(is_client);
-    test_shutdown(is_client);
-    test_head(is_client); 
-    test_update(is_client); 
-}
 
 void time_get(bool is_client) {
     std::cout << "Running time_get test" << std::endl;
@@ -289,6 +279,17 @@ void time_get_large_pair(bool is_client) {
         s.start();
     }
     std::cout << "... done\n" << std::endl;
+}
+
+void run_tests(bool is_client) { 
+    test_memsize(is_client); 
+    test_put(is_client); 
+    test_get(is_client);
+    test_get_large_val(is_client);
+    test_delete(is_client);
+    test_shutdown(is_client);
+    test_head(is_client); 
+    test_update(is_client); 
 }
 
 void run_time_tests(bool is_client) {

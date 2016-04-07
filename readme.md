@@ -34,12 +34,16 @@ All of the networking code is essentially inside of `Client::send`.
 The UDP client code is `Client::cache_get`. 
 It simply opens up a datagram socket, sends the key, and gets pack json information about the key and value. 
 
-TODO TALK ABOUT TIMINGS
+## Timing 
+To test the average GET request time we set an item in the cache, and attempted to retrieve it 1000 times. With both the client and server using the same host, the average time was very fast. It would have been interesting to try to do this with the client and server on separate hosts.  Still, there was a noticeable difference between the average time in milliseconds it took to process a GET request with UDP and the average amount of time it took to handle a GET request with TCP. On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request. To replicate this, see the Testing section.
+
 
 ## Caveats
 We believe that there are some bugs present in the code. We did not get the chance fix errors from flags, and we did not get a chance to run valgrind and find memory leaks. 
 
 Moreover, the code is *threaded*. Poco uses 4 asynchrononous threads for the HTTP-TCP server, and we added a fifth thread for the UDP server. Given our limited knowledge of threading, we suspect that this could lead to issues, and we did nothing to alleviate them. That being said, we never came across an error that seemed to be due to parallelism at any point, so maybe Poco implements something behind the scenes to deal with this issue. The parallelism is something that we will consider more strongly in the parallelism homework. 
+
+We chose to re-vamp our test-suite since we decided to use C++ and POCO. As of right now, our test coverage is a bit thin. Moving forward, we should add tests which attempt to retrieve non-existence keys (which should result in actual cache misses) and other tests which might help us to understand the reliability of using UDP, and request-timeouts, for example. 
 
 Finally, we did not add in command line arguments, due to lack of time.
 However, the system is easily customizable by changing the value of variables in `src/globals.cpp`. 
