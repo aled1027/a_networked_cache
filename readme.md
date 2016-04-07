@@ -37,7 +37,9 @@ The UDP client code is `Client::cache_get`.
 It simply opens up a datagram socket, sends the key, and gets pack json information about the key and value. 
 
 ## Timing 
-To test the average GET request time we set an item in the cache, and attempted to retrieve it 1000 times. The average time was very fast when running both the client and server on localhost. It would have been interesting to try to do this with the client and server on separate hosts.  Still, there was a noticeable difference between the average time in milliseconds it took to process a GET request with UDP and the average amount of time it took to handle a GET request with TCP. On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request - that is, UDP showed a 33% improvement in request speed. To replicate this, see the Testing section.
+To test the average GET request time we set an item in the cache, and attempted to retrieve it 1000 times. The average time was very fast when running both the client and server on localhost. It would have been interesting to try to do this with the client and server on separate hosts.  Still, there was a noticeable difference between the average time in milliseconds it took to process a GET request with UDP and the average amount of time it took to handle a GET request with TCP. 
+
+On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request - that is, UDP showed a 33% improvement in request speed. To replicate this, see the Testing section.
 
 ##Testing
   * change globals::USE_UDP to true
