@@ -2,20 +2,22 @@
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
 ## Homework for Eitan
-For this homework, we elected to use and learn a few technologies: C++, CMake, Boost (has been removed, but was in the code for a while) and Poco. 
-We decided to use C++ because it is more often requested by employers and seemed to have healthier libraries - and it lead to cleaner to code. 
-We decided to use CMake because Alex had run across quite a few projects that use it and wanted to become familiar with it. It turned out to be quite useful.
+For this homework, we elected to learn and use a few new technologies: C++, CMake, Boost (has been removed, but was in the code for a while) and Poco. 
+We decided to use C++ because it is often requested by employers and seemed to have healthier libraries - and it lead to cleaner to code. 
+We decided to use CMake because Alex had run across it in a few projects and wanted to become familiar with it. 
+It turned out to be quite useful.
 And finally, we ended up using Poco to manage our networking code (and we used it parse JSON).
 
 You may find our server-side code in files `include/poco_server.h` and `src/poco_server.cpp`.
 You will find that at the highest layer of abstraction is a class `Server`, which has no member variables, only a method `start()`. 
 `Server::start()` starts the TCP server, and if neccessary, opens the UDP socket. 
+
 The TCP server is implemented with the class `MyTCPServer`, which inherits from a Poco class `ServerApplication`. 
-`MyTCPServer` overrides the method `MyTCPServer::main()`, which starts the HTTPServer provided by Poco. 
+`MyTCPServer` has a method `MyTCPServer::main()`, which starts the HTTPServer provided by Poco. 
 The HTTPServer handles requests via `MyRequestHandler`.
 All requests are piped through the method `MyRequestHandler::handleRequest`, which calls the appropriate function based on the method type. 
 
-The Poco code handles pretty much everything behinds the scenes.
+The Poco code handles pretty much everything behind the scenes.
 It runs HTTP via TCP, and gives us a `HTTPServerRequest` object. 
 We retrieve information from the `HTTPServerRequest` object, perform the necessary operations, and fill a `HTTPServerResponse` which is sent back to the client.
 It's extremely nice. 
@@ -35,8 +37,19 @@ The UDP client code is `Client::cache_get`.
 It simply opens up a datagram socket, sends the key, and gets pack json information about the key and value. 
 
 ## Timing 
-To test the average GET request time we set an item in the cache, and attempted to retrieve it 1000 times. With both the client and server using the same host, the average time was very fast. It would have been interesting to try to do this with the client and server on separate hosts.  Still, there was a noticeable difference between the average time in milliseconds it took to process a GET request with UDP and the average amount of time it took to handle a GET request with TCP. On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request. To replicate this, see the Testing section.
+To test the average GET request time we set an item in the cache, and attempted to retrieve it 1000 times. The average time was very fast when running both the client and server on localhost. It would have been interesting to try to do this with the client and server on separate hosts.  Still, there was a noticeable difference between the average time in milliseconds it took to process a GET request with UDP and the average amount of time it took to handle a GET request with TCP. On Isabella's computer, the average time for GET using UDP was ~.6ms per request, and the average time for GET with TCP was ~.9ms per request - that is, UDP showed a 33% improvement in request speed. To replicate this, see the Testing section.
 
+##Testing
+  * change globals::USE_UDP to true
+    * In one terminal, `make run_server`
+    * In one terminal, `make run_client` 
+    * output on client-side confirms tests and shows the results of timing 1000 get requests with UDP
+      * Avg time on @ifjorissen's MBP: .63ms
+  * change globals::USE_UDP to false
+    * In one terminal, `make run_server`
+    * In one terminal, `make run_client` 
+    * output on client-side confirms tests and shows the results of timing 1000 get requests with TCP
+      * Avg time on @ifjorissen's MBP: .9ms
 
 ## Caveats
 We believe that there are some bugs present in the code. We did not get the chance fix errors from flags, and we did not get a chance to run valgrind and find memory leaks. 
@@ -52,10 +65,10 @@ However, the system is easily customizable by changing the value of variables in
 1. Install cmake
 2. Install boost
 3. Install poco
-4. `cmake .`
-5. `make`
-6. In one terminal, `make run_server`
-7. In another terminal, `make run_client`
+4. `cmake .` will generate makefile
+5. `make` will compile our code and link libraries as needed
+6. In one terminal, call `make run_server`
+7. In another terminal, call `make run_client`
 8. Watch it go
 
 ## Contributing
@@ -63,14 +76,3 @@ If a new cpp file is added, it needs to be added to CMakeLists.txt.
 Where should be clear when you look at the file.
 Then run `cmake .` to recreate the makefile.
 
-##Testing
-  * change globals::USE_UDP to true
-    * In one terminal, `make run_server`
-    * In one terminal, `make run_client` 
-    * output on client-side confirms tests and shows the results of timing 1000 get requests with UDP
-      * Avg time on @ifjorissen's MBP: .63ms
-  * change globals::USE_UDP to false
-    * In one terminal, `make run_server`
-    * In one terminal, `make run_client` 
-    * output on client-side confirms tests and shows the results of timing 1000 get requests with TCP
-      * Avg time on @ifjorissen's MBP: .9ms
