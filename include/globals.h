@@ -17,6 +17,7 @@ namespace globals
     extern const int UDP_PORT;
     extern const char* HOST;
     extern bool USE_UDP;
+    extern bool IS_PYTHON_CLIENT;
 }
 
 void print_vector_string(std::vector<std::string> v);

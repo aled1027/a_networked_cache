@@ -102,8 +102,21 @@ class MyUDPServer : public Poco::Task {
                 val_type val;
                 uint32_t val_size;
 
-                std::string str_buffer(buffer);
-                key = (key_type) str_buffer.c_str();
+                if (!globals::IS_PYTHON_CLIENT) {
+                    //if we are using CPP Client
+                    std::string decoded_uri;
+                    Poco::URI::decode(buffer, decoded_uri);
+                    std::vector<std::string> tokens = string_split(decoded_uri, '/');
+                    if (tokens.size() != 2 || tokens[0] != "") {
+                        debug("bad request");
+                    }
+                    key = (key_type) tokens[1].c_str();
+                } else { 
+                    std::string str_buffer(buffer);
+                    key = (key_type) str_buffer.c_str();
+                }
+
+                // Resume normal track
                 val = cache_get(cache, key, &val_size);
 
                 if (!val) {
@@ -114,7 +127,7 @@ class MyUDPServer : public Poco::Task {
                     oss << "{\"key\": \"" << key << "\", \"value\": \"" << "NULL" << "\"}";
                     std::string msg = oss.str();
                     dgs.sendTo(msg.data(), msg.size(), sender);
-                   
+
                 } else {
                     // otherwise key is in cache
                     // convert val_type (i.e void*) into a std::string
@@ -130,7 +143,7 @@ class MyUDPServer : public Poco::Task {
                     oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
                     std::string msg = oss2.str();
                     dgs.sendTo(msg.data(), msg.size(), sender);
-                    
+
                 }
             }
         }
@@ -264,7 +277,7 @@ void MyRequestHandler::get(HTTPServerRequest& req, HTTPServerResponse &resp) {
             std::string encoded_key;
             Poco::URI::encode(tokens[1], "", encoded_key);
             Poco::URI::encode(str_val, "", encoded_val);
-            
+
             // return response with uri:{key: k, value: v } 
             std::ostringstream oss;
             oss << "{\"key\": \"" << encoded_key << "\", \"value\": \"" << encoded_val << "\"}";

@@ -1,6 +1,5 @@
 #include "globals.h"
 
-
 void debug(std::string s) {
     std::cout << s << std::endl;
 }
@@ -11,6 +10,7 @@ namespace globals
     const int UDP_PORT = 8081;
     const char *HOST = "localhost";
     bool USE_UDP = true;
+    bool IS_PYTHON_CLIENT = true;
 }
 
 void print_vector_string(std::vector<std::string> v) {

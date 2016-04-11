@@ -93,5 +93,11 @@ asdf
 ## 10. Present results
 asdf
 
+## Misc notes
+- Added a bit of crap to `poco_server.cpp` to `MyUDPServer::runTask` to allow python sockets to work.
+- I couldn't get a udp socket to go to `localhost:port/key`, only to `localhost:port` with a message.
+- should be a way to it, but wasn't working for me.
+
+
 
 
