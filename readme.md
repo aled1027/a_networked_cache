@@ -28,7 +28,8 @@ Our system that are we are assessing is limited to the code that we wrote:
 5. Our performance evaluation will implicitly include networking speed, but that is not our focus.
 
 ## 2. List services and outcome
-1. We use a networking service via Poco, HTTP, TCP and UDP. We are not testing the reliability of these services, and in particular, UDP may fail.
+We use a networking service via Poco, HTTP, TCP and UDP. We are not testing the reliability of these services, and in particular, UDP may fail.
+Tests done on Alex's computer use the Linux OS and tests on Isabella's computer use MacOS.
 
 ## 3. Select metrics
 We will measure sustained throughput, defined as the maximum offered load (in requests per second) at which the mean response time remains under 1 millisecond.
