@@ -68,7 +68,7 @@ class MyUDPServer : public Poco::Task {
             debug("MyUDPServer::runTask");
 
             //create socket address, bind to dgs, set timeouts
-            Poco::Net::SocketAddress sa(globals::HOST, globals::UDP_PORT1);
+            Poco::Net::SocketAddress sa(globals::HOST, globals::UDP_PORT);
             Poco::Net::DatagramSocket dgs(sa, true);
             dgs.setSendTimeout(Poco::Timespan(0,0,0,0,5000));
             dgs.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
@@ -92,24 +92,18 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream debug_recv;
                     debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
                     debug(debug_recv.str());
-
+                    std::cout << "<" << buffer << ">" << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
                 }
 
-                // if a message is successfully received, respond to it
-                std::string decoded_uri;
-                Poco::URI::decode(buffer, decoded_uri);
-                std::vector<std::string> tokens = string_split(decoded_uri, '/');
-                if (tokens.size() != 2 || tokens[0] != "") {
-                    debug("bad request");
-                }
-
                 // get key from cache
-                // key_type key;
+                key_type key;
                 val_type val;
                 uint32_t val_size;
-                key_type key = (key_type) tokens[1].c_str();
+
+                std::string str_buffer(buffer);
+                key = (key_type) str_buffer.c_str();
                 val = cache_get(cache, key, &val_size);
 
                 if (!val) {

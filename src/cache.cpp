@@ -9,7 +9,7 @@
 #include "dbLL.h"
 #include "cache.h"
 
-const bool debug = false;
+const bool debug = true;
 
 // What is this best practice for constants? Put them at top of file or in function?
 const float RESET_LOAD_FACTOR = 0.1;
@@ -165,6 +165,7 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 {
     uint64_t hash = cache_hash(cache, key);
+    printf("key = <%s>\n", key);
 
     if (debug) {
         printf("getting key = %" PRIu8 "\n", *key);

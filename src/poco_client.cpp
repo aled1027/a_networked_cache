@@ -61,7 +61,7 @@ cache_t Client::create_cache(uint64_t maxmem) {
     cache_t cache = (cache_t)calloc(1, sizeof(cache_t));
     cache->host = globals::HOST;
     cache->port = globals::TCP_PORT;
-    cache->udp_port = globals::UDP_PORT1;
+    cache->udp_port = globals::UDP_PORT;
 
     //form the request
     std::ostringstream oss;
