@@ -34,26 +34,63 @@ Our system that are we are assessing is limited to the code that we wrote:
 We will measure sustained throughput, defined as the maximum offered load (in requests per second) at which the mean response time remains under 1 millisecond.
 
 ## 4. List parameters
-#### System Parameters
-1. 
-#### Workload Parameters
-1. Distribution of requests
-2. Frequency of requests
-3. Key size and nature of keys of requests
-4. Value size and nature of values of requests
 
+#### System Parameters
+1. Hash function
+2. Setting `maxmem`, max load factor, reset load factor
+3. Eviction policy (fixed to LRU)
+
+#### Workload Parameters
+1. Request rate
+2. Read/write ratio
+3. Key size distribution
+4. Value size distribution
+5. Key reuse period
+6. Inter-arrival gap
 
 ## 5. Select factors to study
 
+#### Those that will be varied
+1. Sustained throughput (in requests per second)
+
+#### Those that will not vary
+    1. Read/write ratio
+    2. Key size distribution
+    3. Value size distribution
+    4. Key reuse period
+    5. Inter-arrival gap
+    5. Eviction policy
+    6. Hash function
+    7. Load factor parameters
+    8. The initial `maxmem`
+
+Key size, value size and inter-arrival time gap are fixed but nonconstant (they will be modeled with distributions)
+
 ## 6. Select evaluation technique
+    We have three choices for evaluation technique: analytical modeling, simulation and measuring a real system. 
+    We are doing a simulation because (1) analytical modeling would give little information about our brand new cache and (2) we do not have access to a real system. 
+    This leaves us to run a simulation.
 
 ## 7. Select workload
+    In our simulation, we aim to mimic the workload of the ETC pool of Facebook's memcached.
+    We model key size with a poisson distribution with mean 30. 
+    We model value size with an normal distribution with mean 100 and standard deviation 8
+    We model the inter-arrival gap with normal distributin with mean mu, as defined by the trial's transactions per second value, and standard deviation mu/5. 
+    For example, if we are requesting 1000 requests per second, then the mean equals 1/1000, and the standard deviation equal 1/5000. 
+
+    We note that Facebook observes that ETC's value size and inter-arrival gap have a long-tail distribution, which we do not capture by using normal distributions.
+    We chose to use normal distributions because normal distributions are accessible and felt that a normal distribution was sufficient.
+    If a cache is being used correctly, then there shouldn't be too many large values. 
+    This is an arguable experimental design decision.
 
 ## 8. Design experiment
+    Used mutilate for distributions:  [https://github.com/leverich/mutilate](https://github.com/leverich/mutilate)
 
 ## 9. Analyze and interpret data
+    adsf
 
 ## 10. Present results
+    asdf
 
 
 
