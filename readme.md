@@ -16,3 +16,7 @@ If a new cpp file is added, it needs to be added to CMakeLists.txt.
 Where should be clear when you look at the file.
 Then run `cmake .` to recreate the makefile.
 
+# Benchmarking your networked cache
+
+text goes here
+
