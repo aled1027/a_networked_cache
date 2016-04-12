@@ -1,6 +1,6 @@
 #include "globals.h"
 
-void debug(std::string s) {
+void debug(const std::string& s) {
     std::cout << s << std::endl;
 }
 

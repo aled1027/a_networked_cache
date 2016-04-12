@@ -102,22 +102,23 @@ class MyUDPServer : public Poco::Task {
                 val_type val;
                 uint32_t val_size;
 
+                //if we are using CPP Client, get key from path
                 if (!globals::IS_PYTHON_CLIENT) {
-                    //if we are using CPP Client
                     std::string decoded_uri;
                     Poco::URI::decode(buffer, decoded_uri);
                     std::vector<std::string> tokens = string_split(decoded_uri, '/');
                     if (tokens.size() != 2 || tokens[0] != "") {
                         debug("bad request");
                     }
-                    key = (key_type) tokens[1].c_str();
+                    key = (key_type) strdup(tokens[1].c_str());
                 } else { 
+                    //if we are using python UDP, get key from message
                     std::string str_buffer(buffer);
-                    key = (key_type) str_buffer.c_str();
+                    key = (key_type) strdup(str_buffer.c_str());
                 }
 
                 // Resume normal track
-                val = cache_get(cache, key, &val_size);
+                val = cache_get(cache, key, &val_size); 
 
                 if (!val) {
                     // if key is not in cache
@@ -130,21 +131,22 @@ class MyUDPServer : public Poco::Task {
 
                 } else {
                     // otherwise key is in cache
-                    // convert val_type (i.e void*) into a std::string
+                    // convert val_type (i.e void*) into a char*
                     debug("successful get");
 
                     char new_val[val_size + 1];
                     memcpy(new_val, val, val_size);
                     new_val[val_size] = '\0';
-                    std::string str_val = std::string(new_val);
 
                     // return response with uri:{key: k, value: v } 
                     std::ostringstream oss2;
-                    oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << str_val << "\"}";
+                    oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << new_val << "\"}";
                     std::string msg = oss2.str();
+                    std::cout << "returning: " << msg << std::endl;
                     dgs.sendTo(msg.data(), msg.size(), sender);
-
                 }
+                free((char*) key);
+                free((void*) val);
             }
         }
 };
