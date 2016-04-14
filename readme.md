@@ -76,8 +76,7 @@ This leaves us to run a simulation.
 In our simulation, we aim to mimic the workload of the ETC pool of Facebook's memcached.
 We model key size with a poisson distribution with mean 30. 
 We model value size with an normal distribution with mean 100 and standard deviation 8
-We model the inter-arrival gap with normal distributin with mean mu, as defined by the trial's transactions per second value, and standard deviation mu/5. 
-For example, if we are requesting 1000 requests per second, then the mean equals 1/1000, and the standard deviation equal 1/5000. 
+We model the inter-arrival gap to be constant dependent on the number of transactions per second.
 
 We note that Facebook observes that ETC's value size and inter-arrival gap have a long-tail distribution, which we do not capture by using normal distributions.
 We chose to use normal distributions because normal distributions are accessible and felt that a normal distribution was sufficient.
