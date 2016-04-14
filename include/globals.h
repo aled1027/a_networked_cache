@@ -18,6 +18,7 @@ namespace globals
     extern const char* HOST;
     extern bool USE_UDP;
     extern bool IS_PYTHON_CLIENT;
+    extern bool DEBUG_ON;
 }
 
 void print_vector_string(std::vector<std::string> v);
