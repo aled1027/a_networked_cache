@@ -92,7 +92,7 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream debug_recv;
                     debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
                     debug(debug_recv.str());
-                    std::cout << "<" << buffer << ">" << std::endl;
+                    // std::cout << "<" << buffer << ">" << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
                 }

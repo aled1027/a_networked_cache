@@ -293,7 +293,7 @@ void run_tests(bool is_client) {
 }
 
 void run_time_tests(bool is_client) {
-    time_get(is_client);
+    // time_get(is_client);
     // time_get_large_pair(is_client);
 }
 
