@@ -1,17 +1,21 @@
 #include "globals.h"
 
-void debug(const std::string& s) {
-    std::cout << s << std::endl;
-}
-
 namespace globals
 {
     const int TCP_PORT = 8080;
     const int UDP_PORT = 8081;
-    const char *HOST = "localhost";
+    const char *HOST = "10.0.0.118";
     bool USE_UDP = true;
     bool IS_PYTHON_CLIENT = true;
+    bool DEBUG_ON = false;
 }
+
+void debug(const std::string& s) {
+    if (globals::DEBUG_ON){
+        std::cout << s << std::endl;
+    }
+}
+
 
 void print_vector_string(std::vector<std::string> v) {
     std::cout << "Printing vector string" << std::endl;

@@ -11,6 +11,9 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 7. In another terminal, call `make run_client`
 8. Watch it go
 
+## Usage for benchmarking
+Currently, we have a python script, `performance_tests.py` which does the brunt of the heavy lifting for our benchmark tests. If you want to run the tests yourself, you need to have a few python libraries installed. The file `requirements.txt` lists them. To install, (ideally) activate a new virtual environment and then `pip install -r requirements.txt`. 
+
 ## Contributing
 If a new cpp file is added, it needs to be added to CMakeLists.txt.
 Where should be clear when you look at the file.

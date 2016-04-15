@@ -92,7 +92,7 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream debug_recv;
                     debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
                     debug(debug_recv.str());
-                    std::cout << "<" << buffer << ">" << std::endl;
+                    // std::cout << "<" << buffer << ">" << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
                 }
@@ -142,7 +142,9 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream oss2;
                     oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << new_val << "\"}";
                     std::string msg = oss2.str();
-                    std::cout << "returning: " << msg << std::endl;
+                    std::ostringstream debug_get;
+                    debug_get << "returning: " << msg;
+                    debug(debug_get.str());
                     dgs.sendTo(msg.data(), msg.size(), sender);
                 }
                 free((char*) key);
