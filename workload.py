@@ -15,7 +15,7 @@ import requests as req
 import numpy as np
 
 #global constants for connecting to remote server
-HOST = '10.0.0.118' #@ifjorissen's ip address at home 
+HOST = '127.0.0.1' #@ifjorissen's ip address at home 
 TCP_PORT = '8080'
 UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
@@ -208,8 +208,8 @@ def task_master():
         f.write("#rate(req/sec)\t mean(sec)\t sent\t recieved\t lost\n")
     for i, rate in enumerate(RATES):
         try:
-            port_no = 8081 + i 
-            host_name = "10.0.0.230"
+            port_no = 8082 + i 
+            host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.bind((host_name, port_no))
             print("client datagram socket bound to: {}:{}".format(host_name, port_no)) 
