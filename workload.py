@@ -1,7 +1,6 @@
-
-
 #std python libs imports
 import socket
+import sys
 import json
 import time
 import string
@@ -15,13 +14,14 @@ import requests as req
 import numpy as np
 
 #global constants for connecting to remote server
-HOST = '127.0.0.1' #@ifjorissen's ip address at home 
+HOST = '127.0.0.1' #@ifjorissen's ip address at home
 TCP_PORT = '8080'
 UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 
-#global costants for testing the cache at various "rates" (really just sleep times) 
-RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
+#global costants for testing the cache at various "rates" (really just sleep times)
+#RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
+RATES = [1000, 2000]
 SUSTAINED_FOR = 30
 
 #global variables for keeping track of requests and responses
@@ -87,6 +87,9 @@ def tcp_post(key='ab', value='abc'):
     my_assert(resp)
     return key, value
 
+def shutdown_cache():
+    resp = req.post(TCP_BASE + '/shutdown')
+    time.sleep(0.1) # give time for the server to setup
 
 def udp_get(sock):
     '''
@@ -95,13 +98,14 @@ def udp_get(sock):
     global recv_res_get, recv_times_get
     try:
         recv_data = sock.recvfrom(1024)
+        #print(recv_data)
         recv_times_get.append(time.monotonic())
         recv_res_get += 1
         reply = recv_data[0]
         addr = recv_data[1]
         ret_dict = json.loads(reply.decode("utf-8"))
         return ret_dict
-    except OSError: 
+    except OSError:
         print("we closed this socket")
         return None
 
@@ -124,7 +128,7 @@ def get_workload(sock, stop_task):
 
 def send_workload(sock, rate, stop_task):
     '''
-    measures the mean response time for a workload composed of 100 percent get requests 
+    measures the mean response time for a workload composed of 100 percent get requests
     sent at a rate of rate
     '''
     print("\n********************************************")
@@ -145,6 +149,7 @@ def mixed_workload(sock, rate, stop_task):
     print("\n********************************************")
     print("sending messages at a rate of ~{} per second".format(rate))
     sleep_time = 1.0/rate
+
     while not stop_task.is_set():
         work_type = np.random.choice(WORKLOAD_CHOICE, 1, p=WORKLOAD_CHOICE_PROB)
         key = random.choice(KEYS)
@@ -158,9 +163,10 @@ def mixed_workload(sock, rate, stop_task):
             tcp_post(key, val)
         time.sleep(sleep_time)
 
+
 def generate_key_val(num=MAX_PAIRS):
     '''
-    generates up to MAX_PAIRS key value pairs, 
+    generates up to MAX_PAIRS key value pairs,
     '''
     global KEYS, VALUES
     num_pairs = 0
@@ -168,7 +174,7 @@ def generate_key_val(num=MAX_PAIRS):
         lengths = [int(x) for x in np.random.normal(40, 10, 2)]
         key = ''.join(random.choice(string.ascii_letters) for i in range(lengths[0]))
         value = ''.join(random.choice(string.ascii_letters) for i in range(lengths[1]))
-        print("key: {}, value: {}".format(key, value))
+        #print("key: {}, value: {}".format(key, value))
         yield key, value
         KEYS.append(key)
         VALUES.append(value)
@@ -208,25 +214,28 @@ def task_master():
         f.write("#rate(req/sec)\t mean(sec)\t sent\t recieved\t lost\n")
     for i, rate in enumerate(RATES):
         try:
-            port_no = 8082 + i 
+            port_no = 8082 + i
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.bind((host_name, port_no))
-            print("client datagram socket bound to: {}:{}".format(host_name, port_no)) 
+            print("client datagram socket bound to: {}:{}".format(host_name, port_no))
 
             task_stop=Event()
+            setup_cache()
             task = Thread(target=mixed_workload, args=(sock, rate, task_stop))
             task_getter = Thread(target=get_workload, args=(sock, task_stop))
             task.start()
             task_getter.start()
-            
+
             time.sleep(SUSTAINED_FOR)
             task_stop.set()
             sock.close()
             task.join()
-            task_getter.join()
+            #task_getter.join() # doesn't work on Alex's computer
 
-            #now, do something moderately useful with this data
+            shutdown_cache()
+
+            # now, do something moderately useful with this data
             sent_times = sent_times_get + sent_times_up + sent_times_del
             recv_times = recv_times_get + recv_times_up + recv_times_del
             sent_req = sent_req_get + sent_req_up + sent_req_del
@@ -238,8 +247,8 @@ def task_master():
             times = [(e - s) for (s, e) in list(zip(sent_times, recv_times))]
 
             lost = sent_req-recv_res
-            lost_get = sent_req_get - recv_res_get    
-            lost_up = sent_req_up - recv_res_up       
+            lost_get = sent_req_get - recv_res_get
+            lost_up = sent_req_up - recv_res_up
             lost_del = sent_req_del - recv_res_del
 
             try:
@@ -247,7 +256,6 @@ def task_master():
             except ZeroDivisionError:
                 print("Ah! I guess we lost all the packets!")
                 mean_time = 0.0
-
 
             try:
                 mean_get = sum(get_times)/(sent_req_get - lost_get)
@@ -267,13 +275,14 @@ def task_master():
             except ZeroDivisionError:
                 print("Ah! I guess we lost all the delete packets!")
                 mean_del = 0.0
-            
+
             with open("workload_data.dat", 'a') as f:
                 f.write("{}\t{}\t{}\t{}\t{}\n".format(rate, mean_time, sent_req, recv_res, lost))
             print("\n\tTOT (sent): {}\t TOT (recv): {}\t mean TOT: {}\t lost: {}".format(sent_req, recv_res, mean_time, lost))
             print("\tGET (sent): {}\t GET (recv): {}\t mean GET: {}\t lost: {}".format(sent_req_get, recv_res_get, mean_get, lost_get))
             print("\tUPD (sent): {}\t UPD (recv): {}\t mean UPD: {}\t lost: {}".format(sent_req_up, recv_res_up, mean_up, lost_up))
             print("\tDEL (sent): {}\t DEL (recv): {}\t mean DEL: {}\t lost: {}".format(sent_req_del, recv_res_del, mean_del, lost_del))
+
             sent_req_del = 0
             recv_res_del = 0
             sent_req_up = 0
@@ -302,9 +311,9 @@ def task_master():
             print("Error Code: {} Message: {}".format(e[0], e[1]))
             sys.exit()
     print("done")
+    sys.exit()
 
 if __name__ == '__main__':
-    setup_cache()
     task_master()
 
 
