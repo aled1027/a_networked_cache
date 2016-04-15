@@ -282,6 +282,14 @@ void time_get_large_pair(bool is_client) {
 }
 
 void run_tests(bool is_client) { 
+    if (globals::IS_PYTHON_CLIENT && !is_client) {
+        while (true) {
+            Server s;
+            s.start();
+        }
+        return;
+    }
+
     test_memsize(is_client); 
     test_put(is_client); 
     test_get(is_client);
