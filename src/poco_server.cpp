@@ -377,7 +377,7 @@ int MyTCPServer::main(const std::vector<std::string> &)
 
 void Server::start() {
     if (globals::USE_UDP) {
-        debug("initializing server with TCP and UPD");
+        debug("initializing server with TCP and UDP");
         Poco::TaskManager task_manager;
         MyUDPServer* udp_server_task = new MyUDPServer("task1");
         task_manager.start(udp_server_task); // tm takes ownership

@@ -88,12 +88,25 @@ This is an arguable experimental design decision.
 
 ## 8. Design experiment
 Used mutilate for distributions:  [https://github.com/leverich/mutilate](https://github.com/leverich/mutilate)
+As a setup step, we randomly generate some (key, value) pairs and put them in the cache. When sending a request, we randomly choose a key and a value (not necessarily the same pair) and pass that information to the correct request type we are attempting to make. Note that the only request type which requires a value is the UPDATE (put) request type, since we wish to replace the value. 
+
+At first, the idea behind the experimental design was to create a thread which sent GET requests at a certain rate for a sustained amount of time (30 seconds). This was done by having two threads: one responsible for sending the request, grabbing a timestamp, and incrementing a global variable; and a second thread responsible for listening to responses to those requests and keeping track of the analgous data. 
+
+However, this presented a problem when we attempted to simulate the ETC workload from the memcached paper. Namely, we chose to use python requests library to help us send PUT, UPDATE, and DELETE requests to our cache. The python requests library is not asychronous, so it is proving to be quite difficult to send requests at a desired rate when the workload is varied. 
+
+To solve this we need to do (at least) two things:
+  * Figure our which library would best suit our needs and integrate it into `workload.py`
+  * Modify the relevant global variables so that they are either no longer global, or can only be modified after aquiring a lock. 
+
+In the meantime, we are using a Timer() object to allow us to send PUT, UPDATE, and DELETE requests in a way that's non-blocking. However, this does nothing to avoid the potential race conditions when it comes to updating global variables.
 
 ## 9. Analyze and interpret data
 asdf
 
 ## 10. Present results
-asdf
+Due to the issues outlined in section 8 (Design experiment), a workload is currently composed entirely of get requests. The issue with the workload is compounded by the fact that our cache is not currently thread-safe, though it does use multiple threads. When we attempt to simulate a mixed workload on our cache, the server will often encounter a memory allocation or freeing error, which is fatal and prevents data from being collected on the client-side.
+
+We note that for a workload of 100% GET requests, the mean response time begins to exceed 1ms at approximately 3000requests per second. Past this point, we notice a dramatically increased response time (an order of magnitude increase between 3000req/sec and 3250 req/sec) and a marked increase in packet loss. At a rate of 10000req/sec, we see that the mean response time is (WHAT???? thoughts, alex?) and we've received under 50% of our expected responses.
 
 ## Misc notes
 - Added a bit of crap to `poco_server.cpp` to `MyUDPServer::runTask` to allow python sockets to work.

@@ -43,13 +43,13 @@ void evict_set(evict_t evict, key_type key)
     // If this code is commented out, a key may be be prematurely evicted.
     //
     // check if key already in queue:
-    //for (uint32_t i = evict->front; i < evict->rear; ++i) {
-    //    if (evict->queue[i] && strcmp((char*) evict->queue[i], (char*) key) == 0) {
-    //        free((void*) evict->queue[i]);
-    //        evict->queue[i] = NULL;
-    //        break;
-    //    }
-    //}
+    for (uint32_t i = evict->front; i < evict->rear; ++i) {
+       if (evict->queue[i] && strcmp((char*) evict->queue[i], (char*) key) == 0) {
+           free((void*) evict->queue[i]);
+           evict->queue[i] = NULL;
+           break;
+       }
+    }
 
     // put key on back of queue
     key_type key_copy = (key_type)calloc(strlen((const char*) key) + 1, sizeof(uint8_t));

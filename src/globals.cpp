@@ -7,7 +7,7 @@ namespace globals
     const char *HOST = "127.0.0.1";
     bool USE_UDP = true;
     bool IS_PYTHON_CLIENT = true;
-    bool DEBUG_ON = true;
+    bool DEBUG_ON = false;
 }
 
 void debug(const std::string& s) {

@@ -284,6 +284,7 @@ void time_get_large_pair(bool is_client) {
 void run_tests(bool is_client) { 
     if (globals::IS_PYTHON_CLIENT && !is_client) {
         while (true) {
+            std::cout<< "starting server" << std::endl;
             Server s;
             s.start();
         }

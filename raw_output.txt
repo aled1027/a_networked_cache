@@ -1,0 +1,212 @@
+client datagram socket bound to: 127.0.0.1:8082
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~100 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 3001   TOT (recv): 3001  mean TOT: 0.00023010307151382937  lost: 0
+  GET (sent): 3001   GET (recv): 3001  mean GET: 0.00023010307151382937  lost: 0
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 0 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8083
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~250 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 7501   TOT (recv): 7501  mean TOT: 0.00022044434815130204  lost: 0
+  GET (sent): 7501   GET (recv): 7501  mean GET: 0.00022044434815130204  lost: 0
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 0 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8084
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~500 per second
+udp::get we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 15001  TOT (recv): 15000   mean TOT: 0.000192008734785486  lost: 1
+  GET (sent): 15001  GET (recv): 15000   mean GET: 0.000192008734785486  lost: 1
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 1 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8085
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~1000 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 30001  TOT (recv): 30000   mean TOT: 0.00015915787587485587  lost: 1
+  GET (sent): 30001  GET (recv): 30000   mean GET: 0.00015915787587485587  lost: 1
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 1 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8086
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~2000 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 60007  TOT (recv): 60007   mean TOT: 0.00014228203081415622  lost: 0
+  GET (sent): 60007  GET (recv): 60007   mean GET: 0.00014228203081415622  lost: 0
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 0 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8087
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~3000 per second
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 90005  TOT (recv): 90005   mean TOT: 0.00015749865211145457  lost: 0
+  GET (sent): 90005  GET (recv): 90005   mean GET: 0.00015749865211145457  lost: 0
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 0 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8088
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~3250 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 97504  TOT (recv): 97503   mean TOT: 0.0013528478621446143   lost: 1
+  GET (sent): 97504  GET (recv): 97503   mean GET: 0.0013528478621446143   lost: 1
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 1 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8089
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~3500 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 105018   TOT (recv): 104819  mean TOT: 0.0030967529195175124   lost: 199
+  GET (sent): 105018   GET (recv): 104819  mean GET: 0.0030967529195175124   lost: 199
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 199 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8090
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~3750 per second
+udp::get we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 112510   TOT (recv): 112433  mean TOT: 0.004345846403722108  lost: 77
+  GET (sent): 112510   GET (recv): 112433  mean GET: 0.004345846403722108  lost: 77
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 77 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8091
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~4000 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 120006   TOT (recv): 116717  mean TOT: 0.0629244568438125  lost: 3289
+  GET (sent): 120006   GET (recv): 116717  mean GET: 0.0629244568438125  lost: 3289
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 3289 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8092
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~5000 per second
+udp::get we closed this socket
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 150004   TOT (recv): 132010  mean TOT: 0.4891405712961178  lost: 17994
+  GET (sent): 150004   GET (recv): 132010  mean GET: 0.4891405712961178  lost: 17994
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 17994 responses, sleeping for 5 seconds
+client datagram socket bound to: 127.0.0.1:8093
+
+********************************************
+adding some key value pairs to the cache... slowly
+...done pre-populating the cache
+
+********************************************
+sending messages at a rate of ~10000 per second
+udp::send we closed this socket
+Ah! I guess we lost all the update packets!
+Ah! I guess we lost all the delete packets!
+
+  TOT (sent): 299320   TOT (recv): 145903  mean TOT: 3.7749254919779958  lost: 153417
+  GET (sent): 299320   GET (recv): 145903  mean GET: 3.7749254919779958  lost: 153417
+  UPD (sent): 0  UPD (recv): 0   mean UPD: 0.0   lost: 0
+  DEL (sent): 0  DEL (recv): 0   mean DEL: 0.0   lost: 0
+lost 153417 responses, sleeping for 5 seconds

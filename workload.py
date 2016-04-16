@@ -14,15 +14,16 @@ import requests as req
 import numpy as np
 
 #global constants for connecting to remote server
-HOST = '127.0.0.1' #@ifjorissen's ip address at home
+HOST = '127.0.0.1' 
 TCP_PORT = '8080'
 UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 
 #global costants for testing the cache at various "rates" (really just sleep times)
 #RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
-RATES = [1000, 2000]
+RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
 SUSTAINED_FOR = 30
+MEAN_RESP_TIME = .001
 
 #global variables for keeping track of requests and responses
 sent_req_del = 0
@@ -44,7 +45,8 @@ elapsed = datetime.timedelta()
 #globals for cache set-up
 MAX_PAIRS = 100
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
-WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
+WORKLOAD_CHOICE_PROB = [1.0, 0.0, 0.0]
+# WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
 KEYS = []
 VALUES = []
 
@@ -58,38 +60,40 @@ def tcp_delete(key='ab', value='abc'):
     given a key and a value, send a PUT request. if no key or value is supplied, use default
     '''
     global elapsed, sent_req_del, recv_res_del, sent_times_del, recv_times_del
-    sent_req_del += 1
-    get_string = TCP_BASE + '/' + key
-    sent_times_del.append(time.monotonic())
-    resp = req.delete(get_string)
-    recv_times_del.append(time.monotonic())
-    recv_res_del += 1
-    elapsed += resp.elapsed
-    # print("tcp:: delete")
+    try:
+        sent_req_del += 1
+        get_string = TCP_BASE + '/' + key
+        sent_times_del.append(time.monotonic())
+        resp = req.delete(get_string)
+        recv_times_del.append(time.monotonic())
+        recv_res_del += 1
+        elapsed += resp.elapsed
+        # print("tcp:: delete")
 
-    my_assert(resp)
-    return key, value
+        my_assert(resp)
+        return key, value
+    except Exception as e:
+        print("uhoh: {}".format(e))
 
 def tcp_post(key='ab', value='abc'):
     '''
     given a key and a value, send a PUT request. if no key or value is supplied, use default
     '''
     global elapsed, sent_req_up, recv_res_up, sent_times_up, recv_times_up
-    sent_req_up += 1
-    get_string = TCP_BASE + '/' + key + '/' + value
-    sent_times_up.append(time.monotonic())
-    resp = req.put(get_string)
-    recv_times_up.append(time.monotonic())
-    recv_res_up += 1
-    elapsed += resp.elapsed
-    # print("tcp:: post")
+    try:
+        sent_req_up += 1
+        get_string = TCP_BASE + '/' + key + '/' + value
+        sent_times_up.append(time.monotonic())
+        resp = req.put(get_string)
+        recv_times_up.append(time.monotonic())
+        recv_res_up += 1
+        elapsed += resp.elapsed
+        # print("tcp:: post")
 
-    my_assert(resp)
-    return key, value
-
-def shutdown_cache():
-    resp = req.post(TCP_BASE + '/shutdown')
-    time.sleep(0.1) # give time for the server to setup
+        my_assert(resp)
+        return key, value
+    except Exception as e:
+      print("uhoh: {}".format(e))
 
 def udp_get(sock):
     '''
@@ -106,7 +110,7 @@ def udp_get(sock):
         ret_dict = json.loads(reply.decode("utf-8"))
         return ret_dict
     except OSError:
-        print("we closed this socket")
+        print("udp::get we closed this socket")
         return None
 
 def udp_send(sock, key):
@@ -114,10 +118,14 @@ def udp_send(sock, key):
     given a socket and  key, send a get request for that key to the socket address
     '''
     global sent_req_get, sent_times_get
-    sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
-    sent_times_get.append(time.monotonic())
-    sent_req_get += 1
+    try:
+        sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
+        sent_times_get.append(time.monotonic())
+        sent_req_get += 1
     # print("udp:: send")
+    except OSError:
+        print("udp::send we closed this socket")
+        return None
 
 def get_workload(sock, stop_task):
     '''
@@ -133,14 +141,23 @@ def send_workload(sock, rate, stop_task):
     '''
     print("\n********************************************")
     print("sending messages at a rate of ~{} per second".format(rate))
-    key = "hello" + str(rate) + "persec"
-    value = "what do we have here"
-    tcp_post(key, value)
-    print("added key: <{}>  value:<{}> to cache".format(key, value))
-    sleep_time = 1.0/rate
+    # key = "hello" + str(rate) + "persec"
+    # value = "what do we have here"
+    # tcp_post(key, value)
+    # print("added key: <{}>  value:<{}> to cache".format(key, value))
+
+    rate_timedelta = 1.0/rate
+    start_time = time.monotonic()
+    next_time = start_time + rate_timedelta
     while not stop_task.is_set():
+        key = random.choice(KEYS)
+        cur_time = time.monotonic()
+        if cur_time < next_time:
+          delay = next_time - cur_time
+          time.sleep(delay)
+        
         udp_send(sock, key)
-        time.sleep(sleep_time)
+        next_time += rate_timedelta
 
 def mixed_workload(sock, rate, stop_task):
     '''
@@ -148,21 +165,28 @@ def mixed_workload(sock, rate, stop_task):
     '''
     print("\n********************************************")
     print("sending messages at a rate of ~{} per second".format(rate))
-    sleep_time = 1.0/rate
 
+    rate_timedelta = 1.0/rate
+    start_time = time.monotonic()
+    next_time = start_time + rate_timedelta
     while not stop_task.is_set():
         work_type = np.random.choice(WORKLOAD_CHOICE, 1, p=WORKLOAD_CHOICE_PROB)
         key = random.choice(KEYS)
         val = random.choice(VALUES)
-
+        cur_time = time.monotonic()
+        if cur_time < next_time:
+            delay = next_time - cur_time
+            time.sleep(delay)
         if work_type == "GET":
             udp_send(sock, key)
         elif work_type == "DEL":
-            tcp_delete(key)
+            t = Timer(0.0, tcp_delete, args=(key,))
+            t.start()
         else:
-            tcp_post(key, val)
-        time.sleep(sleep_time)
+            t = Timer(0.0, tcp_post, args=(key, val))
+            t.start()
 
+        next_time += rate_timedelta
 
 def generate_key_val(num=MAX_PAIRS):
     '''
@@ -201,6 +225,13 @@ def setup_cache():
 
     print("...done pre-populating the cache")
 
+def shutdown_cache():
+    global KEYS, VALUES
+    KEYS = []
+    VALUES = []
+    resp = req.post(TCP_BASE + '/shutdown')
+    time.sleep(1) # give time for the server to setup
+
 def task_master():
     '''
     goal: determine the mean response times for a given workload at a variety of rates which is sustained for SUSTAINED_FOR seconds
@@ -211,7 +242,9 @@ def task_master():
         sent_times_up, recv_times_up, sent_times_get, recv_times_get, elapsed
 
     with open("workload_data.dat", 'a') as f:
-        f.write("#rate(req/sec)\t mean(sec)\t sent\t recieved\t lost\n")
+        f.write("\n#rate(req/sec)\t mean(sec)\t total_sent\t total_recieved\t get_mean(sec)\t \
+                get_sent\t get_received\t update_mean(sec)\t update_sent\t update_received\t \
+                delete_mean(sec)\t delete_sent\t delete_received\t lost\n")
     for i, rate in enumerate(RATES):
         try:
             port_no = 8082 + i
@@ -223,6 +256,7 @@ def task_master():
             task_stop=Event()
             setup_cache()
             task = Thread(target=mixed_workload, args=(sock, rate, task_stop))
+            # task = Thread(target=send_workload, args=(sock, rate, task_stop))
             task_getter = Thread(target=get_workload, args=(sock, task_stop))
             task.start()
             task_getter.start()
@@ -230,7 +264,7 @@ def task_master():
             time.sleep(SUSTAINED_FOR)
             task_stop.set()
             sock.close()
-            task.join()
+            #task.join()
             #task_getter.join() # doesn't work on Alex's computer
 
             shutdown_cache()
@@ -277,12 +311,15 @@ def task_master():
                 mean_del = 0.0
 
             with open("workload_data.dat", 'a') as f:
-                f.write("{}\t{}\t{}\t{}\t{}\n".format(rate, mean_time, sent_req, recv_res, lost))
+                f.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(rate, mean_time, sent_req, recv_res,  mean_get, sent_req_get, recv_res_get, mean_up, sent_req_up,\
+                                                      recv_res_up, mean_del, sent_req_del, recv_res_del, lost))
             print("\n\tTOT (sent): {}\t TOT (recv): {}\t mean TOT: {}\t lost: {}".format(sent_req, recv_res, mean_time, lost))
             print("\tGET (sent): {}\t GET (recv): {}\t mean GET: {}\t lost: {}".format(sent_req_get, recv_res_get, mean_get, lost_get))
             print("\tUPD (sent): {}\t UPD (recv): {}\t mean UPD: {}\t lost: {}".format(sent_req_up, recv_res_up, mean_up, lost_up))
             print("\tDEL (sent): {}\t DEL (recv): {}\t mean DEL: {}\t lost: {}".format(sent_req_del, recv_res_del, mean_del, lost_del))
 
+
+            #reset all those global variables 
             sent_req_del = 0
             recv_res_del = 0
             sent_req_up = 0
@@ -299,17 +336,18 @@ def task_master():
             elapsed = datetime.timedelta()
 
             #sleep for some time so the server can catch up
-            if lost > 10:
-                sleep_time = lost/2
-                print("lost {} responses, sleeping for {} seconds".format(lost, sleep_time))
-            else:
-                sleep_time = 5
-                print("lost {} responses, sleeping for {} seconds".format(lost, sleep_time))
+            sleep_time = 5
+            print("lost {} responses, sleeping for {} seconds".format(lost, sleep_time))
             time.sleep(sleep_time)
 
-        except socket.error as e:
-            print("Error Code: {} Message: {}".format(e[0], e[1]))
+        except ConnectionError as e:
+            print(e)
             sys.exit()
+
+        except socket.error as e:
+            print("Error: {} ".format(e))
+            sys.exit()
+
     print("done")
     sys.exit()
 
