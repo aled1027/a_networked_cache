@@ -19,6 +19,7 @@ namespace globals
     extern bool USE_UDP;
     extern bool IS_PYTHON_CLIENT;
     extern bool DEBUG_ON;
+    extern bool IS_LOCKING;
 }
 
 void print_vector_string(std::vector<std::string> v);

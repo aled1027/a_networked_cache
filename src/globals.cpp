@@ -8,6 +8,7 @@ namespace globals
     bool USE_UDP = true;
     bool IS_PYTHON_CLIENT = true;
     bool DEBUG_ON = false;
+    bool IS_LOCKING = true;
 }
 
 void debug(const std::string& s) {

@@ -11,15 +11,17 @@
 #include <Poco/Net/HTTPRequestHandlerFactory.h>
 #include <Poco/Net/HTTPServerRequest.h>
 #include <Poco/Net/HTTPServerResponse.h>
-#include <Poco/Util/ServerApplication.h>
-#include "Poco/Runnable.h"
-#include "Poco/Timestamp.h"
+
 #include "Poco/DateTimeFormatter.h"
-#include <Poco/Timespan.h>
+#include <Poco/Mutex.h>
+#include <Poco/Process.h>
+#include "Poco/Runnable.h"
 #include <Poco/Task.h>
 #include <Poco/TaskManager.h>
-#include <Poco/Process.h>
+#include "Poco/Timestamp.h"
+#include <Poco/Timespan.h>
 #include <Poco/URI.h>
+#include <Poco/Util/ServerApplication.h>
 
 #include "globals.h"
 #include "cache.h"
@@ -30,12 +32,14 @@ cache_t cache;
 
 using namespace Poco::Net;
 using namespace Poco::Util;
+using Poco::Mutex;
 
 class MyRequestHandler : public HTTPRequestHandler
 {
     public:
         virtual void handleRequest(HTTPServerRequest& req, HTTPServerResponse& resp);
     private:
+        Mutex _mutex;
         void head(HTTPServerRequest& req, HTTPServerResponse &resp);
         void put(HTTPServerRequest& req, HTTPServerResponse &resp);
         void handle_delete(HTTPServerRequest& req, HTTPServerResponse &resp);
@@ -158,6 +162,11 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
 {
     debug("got a request");
 
+    // lock
+    if (globals::IS_LOCKING) {
+        Mutex::ScopedLock lock(_mutex);
+    }
+
     if (req.getMethod() == "POST") {
         post(req, resp);
     } else if (req.getMethod() == "GET") {
@@ -172,6 +181,7 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
         bad_request(req, resp);
     }
 }
+
 
 void MyRequestHandler::head(HTTPServerRequest& req, HTTPServerResponse &resp) {
     debug("got a head");
