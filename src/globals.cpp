@@ -1,5 +1,7 @@
 #include "globals.h"
 
+using Poco::Mutex;
+
 namespace globals
 {
     const int TCP_PORT = 8080;
@@ -10,6 +12,7 @@ namespace globals
     const bool DEBUG_ON = false;
     const bool IS_LOCKING = true;
     const uint32_t DEFAULT_MAXMEM = 100;
+    Mutex mutex;
 }
 
 void debug(const std::string& s) {

@@ -32,7 +32,6 @@ using namespace Poco::Net;
 using namespace Poco::Util;
 using Poco::Mutex;
 
-Mutex mutex;
 cache_t cache;
 
 class MyRequestHandler : public HTTPRequestHandler
@@ -163,22 +162,25 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
     debug("got a request");
 
     // lock
-    if (globals::IS_LOCKING) {
-        Mutex::ScopedLock lock(mutex);
-    }
+    {
+        Mutex::ScopedLock lock(globals::mutex);
+        std::cout << " should be locked" << std::endl;
+        {
 
-    if (req.getMethod() == "POST") {
-        post(req, resp);
-    } else if (req.getMethod() == "GET") {
-        get(req, resp);
-    } else if (req.getMethod() == "PUT") {
-        put(req, resp);
-    } else if (req.getMethod() == "DELETE") {
-        handle_delete(req, resp); // delete is a keyword in c++
-    } else if (req.getMethod() == "HEAD") {
-        head(req, resp); 
-    } else {
-        bad_request(req, resp);
+            if (req.getMethod() == "POST") {
+                post(req, resp);
+            } else if (req.getMethod() == "GET") {
+                get(req, resp);
+            } else if (req.getMethod() == "PUT") {
+                put(req, resp);
+            } else if (req.getMethod() == "DELETE") {
+                handle_delete(req, resp); // delete is a keyword in c++
+            } else if (req.getMethod() == "HEAD") {
+                head(req, resp); 
+            } else {
+                bad_request(req, resp);
+            }
+        }
     }
 }
 

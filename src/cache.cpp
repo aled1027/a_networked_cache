@@ -133,6 +133,7 @@ cache_t create_cache(uint64_t maxmem)
 
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
+
     if (val_size == 0) {
         return;
     }
@@ -144,11 +145,9 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
     uint32_t search_val_size;
     val_type res = ll_search(e, key, &search_val_size);
     if (res) {
-        printf("KEY ALREADY EXISTS IN CACHE!!!! %s\n", key);
         // notify evict that key has been touched.
         // move to rear of LRU
         evict_get(cache->evict, key); 
-        ll_insert(e, key, val, val_size); // insert into double linked list
         return;
     }
 
@@ -161,7 +160,6 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 
     // eviction, if necessary
     while (cache->memused + val_size > cache->maxmem) {
-        printf("cache_set calling evict set for removal\n");
         key_type k = evict_select_for_removal(cache->evict);
         assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
         cache_delete(cache, k);
@@ -202,15 +200,13 @@ void cache_delete(cache_t cache, key_type key)
 
     uint32_t val_size = ll_remove_key(e, key);
     if (val_size > 0) {
-        printf("succesfully deleted %s\n", key);
 
         cache->memused -= val_size;
         --cache->num_elements;
         evict_delete(cache->evict, key);
 
-        assert(cache->num_elements != uint32_t(-1));
     } else {
-        printf("failed to deleted %s\n", key);
+        fprintf(stderr, "failed to delete %s\n", key);
     }
 }
 

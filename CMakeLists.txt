@@ -10,7 +10,7 @@ include_directories(${Boost_INCLUDE_DIR})
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -g")
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -O0 -g")
 
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 

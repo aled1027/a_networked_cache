@@ -6,8 +6,11 @@
 #include <iostream>
 #include <iterator>
 #include <assert.h>
+#include <Poco/Mutex.h>
 
 #define DEBUG
+
+using Poco::Mutex;
 
 void debug(const std::string& s);
 
@@ -21,6 +24,7 @@ namespace globals
     extern const bool DEBUG_ON;
     extern const bool IS_LOCKING;
     extern const uint32_t DEFAULT_MAXMEM;
+    extern Mutex mutex;
 }
 
 void print_vector_string(std::vector<std::string> v);
