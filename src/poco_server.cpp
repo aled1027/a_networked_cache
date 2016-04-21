@@ -164,9 +164,7 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
     // lock
     {
         Mutex::ScopedLock lock(globals::mutex);
-        std::cout << " should be locked" << std::endl;
         {
-
             if (req.getMethod() == "POST") {
                 post(req, resp);
             } else if (req.getMethod() == "GET") {

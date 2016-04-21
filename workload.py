@@ -165,7 +165,7 @@ def mixed_workload(sock, rate, stop_task):
     print("\n********************************************")
     print("sending messages at a rate of ~{} per second".format(rate))
 
-    rate_timedelta = 1.0/rate
+    rate_timedelta = 1.0 / rate
     start_time = time.monotonic()
     next_time = start_time + rate_timedelta
     while not stop_task.is_set():
@@ -302,7 +302,6 @@ def task_master():
                 print("Ah! I guess we lost all the update packets!")
                 mean_up = 0.0
 
-
             try:
                 mean_del = sum(del_times)/(sent_req_del - lost_del)
             except ZeroDivisionError:
@@ -338,13 +337,9 @@ def task_master():
             print("lost {} responses, sleeping for {} seconds".format(lost, sleep_time))
             time.sleep(sleep_time)
 
-        except ConnectionError as e:
-            print(e)
-            sys.exit()
-
-        except socket.error as e:
-            print("Error: {} ".format(e))
-            sys.exit()
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
 
     print("done")
     sys.exit()
