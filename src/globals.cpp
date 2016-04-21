@@ -5,10 +5,11 @@ namespace globals
     const int TCP_PORT = 8080;
     const int UDP_PORT = 8081;
     const char *HOST = "127.0.0.1";
-    bool USE_UDP = true;
-    bool IS_PYTHON_CLIENT = true;
-    bool DEBUG_ON = false;
-    bool IS_LOCKING = true;
+    const bool USE_UDP = true;
+    const bool IS_PYTHON_CLIENT = true;
+    const bool DEBUG_ON = false;
+    const bool IS_LOCKING = true;
+    const uint32_t DEFAULT_MAXMEM = 100;
 }
 
 void debug(const std::string& s) {

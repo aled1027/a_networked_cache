@@ -60,14 +60,13 @@ static void print_key(key_type key)
 
 void rep_node(node_t *node)
 {
-    printf("key: ");
-    print_key(node->key);
-    printf(", value: ");
-    printf("%s\n", (uint8_t*) node->val);
+    printf("\tkey: %s\n\tval: %s\n", node->key, (uint8_t*) node->val);
+    //printf("\n\tvalue: ");
+    //printf("%s\n", (uint8_t*) node->val);
     // for (uint32_t i = 0; i < node->val_size; i++) {
     //     printf("%" PRIu8 ", ", ((uint8_t*) node->val)[i]);
     // }
-    printf("\n");
+    //printf("\n");
 }
 
 key_type get_key(node_t *node)

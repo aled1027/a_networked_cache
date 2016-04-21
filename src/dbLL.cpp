@@ -110,11 +110,9 @@ void rep_list(dbLL_t *list){
     printf("linked list: \n\tsize: %d\n", list->size);
     node_t *cur = list->head;
     while(cur != NULL) {
-        printf("\t");
         rep_node(cur);
         cur = cur->next;
     }
-    printf("...done printing list\n\n");
 }
 
 key_type *ll_get_keys(dbLL_t *list)

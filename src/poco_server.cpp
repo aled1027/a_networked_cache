@@ -28,18 +28,18 @@
 
 #include "poco_server.h"
 
-cache_t cache;
-
 using namespace Poco::Net;
 using namespace Poco::Util;
 using Poco::Mutex;
+
+Mutex mutex;
+cache_t cache;
 
 class MyRequestHandler : public HTTPRequestHandler
 {
     public:
         virtual void handleRequest(HTTPServerRequest& req, HTTPServerResponse& resp);
     private:
-        Mutex _mutex;
         void head(HTTPServerRequest& req, HTTPServerResponse &resp);
         void put(HTTPServerRequest& req, HTTPServerResponse &resp);
         void handle_delete(HTTPServerRequest& req, HTTPServerResponse &resp);
@@ -164,7 +164,7 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
 
     // lock
     if (globals::IS_LOCKING) {
-        Mutex::ScopedLock lock(_mutex);
+        Mutex::ScopedLock lock(mutex);
     }
 
     if (req.getMethod() == "POST") {
@@ -372,7 +372,7 @@ HTTPRequestHandler* MyRequestHandlerFactory::createRequestHandler(const HTTPServ
 }
 
 void MyTCPServer::start() {
-    cache = create_cache(10000);
+    cache = create_cache(globals::DEFAULT_MAXMEM);
     run();
 }
 

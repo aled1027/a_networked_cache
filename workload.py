@@ -14,14 +14,15 @@ import requests as req
 import numpy as np
 
 #global constants for connecting to remote server
-HOST = '127.0.0.1' 
+HOST = '127.0.0.1'
 TCP_PORT = '8080'
 UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 
 #global costants for testing the cache at various "rates" (really just sleep times)
 #RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
-RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
+#RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
+RATES = [500]
 SUSTAINED_FOR = 30
 MEAN_RESP_TIME = .001
 
@@ -41,12 +42,10 @@ sent_times_get = []
 recv_times_get = []
 elapsed = datetime.timedelta()
 
-
 #globals for cache set-up
 MAX_PAIRS = 100
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
-WORKLOAD_CHOICE_PROB = [1.0, 0.0, 0.0]
-# WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
+WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
 KEYS = []
 VALUES = []
 
@@ -127,7 +126,7 @@ def udp_send(sock, key):
         print("udp::send we closed this socket")
         return None
 
-def get_workload(sock, stop_task):
+def recv_workload(sock, stop_task):
     '''
     allows us to continuously grab udp datagram responses
     '''
@@ -155,13 +154,13 @@ def send_workload(sock, rate, stop_task):
         if cur_time < next_time:
           delay = next_time - cur_time
           time.sleep(delay)
-        
+
         udp_send(sock, key)
         next_time += rate_timedelta
 
 def mixed_workload(sock, rate, stop_task):
     '''
-    ~30percent DELETE, ~60percent GET, ~10percent update (post)
+    A mixed workload as defined by global WORKLOAD_CHOICE_PROP list
     '''
     print("\n********************************************")
     print("sending messages at a rate of ~{} per second".format(rate))
@@ -241,7 +240,7 @@ def task_master():
         sent_req_get, recv_res_get, sent_times_del, recv_times_del,\
         sent_times_up, recv_times_up, sent_times_get, recv_times_get, elapsed
 
-    with open("workload_data.dat", 'a') as f:
+    with open("workload_data.tsv", 'a') as f:
         f.write("\n#rate(req/sec)\t mean(sec)\t total_sent\t total_recieved\t get_mean(sec)\t \
                 get_sent\t get_received\t update_mean(sec)\t update_sent\t update_received\t \
                 delete_mean(sec)\t delete_sent\t delete_received\t lost\n")
@@ -257,7 +256,7 @@ def task_master():
             setup_cache()
             task = Thread(target=mixed_workload, args=(sock, rate, task_stop))
             # task = Thread(target=send_workload, args=(sock, rate, task_stop))
-            task_getter = Thread(target=get_workload, args=(sock, task_stop))
+            task_getter = Thread(target=recv_workload, args=(sock, task_stop))
             task.start()
             task_getter.start()
 
@@ -310,7 +309,7 @@ def task_master():
                 print("Ah! I guess we lost all the delete packets!")
                 mean_del = 0.0
 
-            with open("workload_data.dat", 'a') as f:
+            with open("workload_data.tsv", 'a') as f:
                 f.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(rate, mean_time, sent_req, recv_res,  mean_get, sent_req_get, recv_res_get, mean_up, sent_req_up,\
                                                       recv_res_up, mean_del, sent_req_del, recv_res_del, lost))
             print("\n\tTOT (sent): {}\t TOT (recv): {}\t mean TOT: {}\t lost: {}".format(sent_req, recv_res, mean_time, lost))
@@ -318,8 +317,7 @@ def task_master():
             print("\tUPD (sent): {}\t UPD (recv): {}\t mean UPD: {}\t lost: {}".format(sent_req_up, recv_res_up, mean_up, lost_up))
             print("\tDEL (sent): {}\t DEL (recv): {}\t mean DEL: {}\t lost: {}".format(sent_req_del, recv_res_del, mean_del, lost_del))
 
-
-            #reset all those global variables 
+            #reset all those global variables
             sent_req_del = 0
             recv_res_del = 0
             sent_req_up = 0
@@ -353,15 +351,4 @@ def task_master():
 
 if __name__ == '__main__':
     task_master()
-
-
-
-
-
-
-
-
-
-
-
 

@@ -9,35 +9,14 @@
 #include "dbLL.h"
 #include "cache.h"
 
+#include <iostream>
+
 const bool debug = false;
 
 // What is this best practice for constants? Put them at top of file or in function?
 const float RESET_LOAD_FACTOR = 0.1;
 const float MAX_LOAD_FACTOR = 0.5;
-
-uint64_t modified_jenkins(key_type key)
-{
-    // https://en.wikipedia.org/wiki/Jenkins_hash_function
-    uint32_t hash = *key;
-    hash += (hash << 10);
-    hash ^= (hash >> 6);
-    hash += (hash << 3);
-    hash ^= (hash >> 11);
-    hash += (hash << 15);
-    return (uint64_t) hash;
-}
-
 typedef struct _dbLL_t hash_bucket;
-
-static void print_key(key_type key)
-{
-    uint32_t i = 0;
-    while (key[i]) {
-        printf("%" PRIu32 ", ", key[i]);
-        ++i;
-    }
-    printf("\n");
-}
 
 struct cache_obj
 {
@@ -53,6 +32,40 @@ struct cache_obj
     // buckets[i] = pointer to double linked list
     // each node in double linked list is a hash-bucket
 };
+
+void print_cache(cache_t cache)
+{
+    printf("PRINTING CACHE OBJ\n");
+    for (uint32_t i = 0; i < cache->num_buckets; ++i) {
+        if (ll_size(cache->buckets[i]) > 0){
+            printf("hash=%" PRIu32 " has dbll: \n", i);
+            rep_list(cache->buckets[i]);
+        }
+    }
+}
+
+uint64_t modified_jenkins(key_type key)
+{
+    // https://en.wikipedia.org/wiki/Jenkins_hash_function
+    uint32_t hash = *key;
+    hash += (hash << 10);
+    hash ^= (hash >> 6);
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return (uint64_t) hash;
+}
+
+
+static void print_key(key_type key)
+{
+    uint32_t i = 0;
+    while (key[i]) {
+        printf("%" PRIu32 ", ", key[i]);
+        ++i;
+    }
+    printf("\n");
+}
 
 static uint64_t cache_hash(cache_t cache, key_type key)
 {
@@ -120,18 +133,26 @@ cache_t create_cache(uint64_t maxmem)
 
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
-
-    key_type k;
-
-    if (debug) {
-        uint64_t hash = cache_hash(cache, key);
-        printf("setting key = %" PRIu8 "\n", *key);
-        printf("hash = %" PRIu64 "\n", hash);
-        printf("value = %" PRIu8 "\n\n", *(uint8_t *)val);
+    if (val_size == 0) {
+        return;
     }
-    cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
 
-    //case where the value side being inserted is greater than max_mem
+    uint64_t hash = cache_hash(cache, key);
+    hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
+
+    // check if the key exists in the cache already
+    uint32_t search_val_size;
+    val_type res = ll_search(e, key, &search_val_size);
+    if (res) {
+        printf("KEY ALREADY EXISTS IN CACHE!!!! %s\n", key);
+        // notify evict that key has been touched.
+        // move to rear of LRU
+        evict_get(cache->evict, key); 
+        ll_insert(e, key, val, val_size); // insert into double linked list
+        return;
+    }
+
+    // case where the value side being inserted is greater than max_mem
     if (val_size > cache->maxmem){
         printf("Could not store that value. Sorry!\n");
         printf("cache->maxmem: %" PRIu64 "; val_size: %d", cache->maxmem, val_size);
@@ -139,27 +160,20 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
     }
 
     // eviction, if necessary
-    cache->memused += val_size;
-    while (cache->memused > cache->maxmem) {
-        k = evict_select_for_removal(cache->evict);
+    while (cache->memused + val_size > cache->maxmem) {
+        printf("cache_set calling evict set for removal\n");
+        key_type k = evict_select_for_removal(cache->evict);
         assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
         cache_delete(cache, k);
-        free((uint8_t*) k);
     }
 
-    uint64_t hash = cache_hash(cache, key);
-    hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
-
-    // check if the key exists in the cache already
-    uint32_t old_val_size = ll_remove_key(e, key);
-    if (old_val_size != 0){
-        cache_delete(cache, key);
-    }
-
-    // insert the key, value into cache
+    // insert <key,value> normally into cache
     ll_insert(e, key, val, val_size); // insert into double linked list
     evict_set(cache->evict, key); // notify evict object that key was inserted
+    cache->memused += val_size;
     ++cache->num_elements;
+
+    cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
 }
 
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
@@ -183,14 +197,20 @@ val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 void cache_delete(cache_t cache, key_type key)
 {
     uint64_t hash = cache_hash(cache, key);
-    // uint32_t val_size;
     hash_bucket *e = cache->buckets[hash];
+    // val_size will be 0 only if there is no item to remove
+
     uint32_t val_size = ll_remove_key(e, key);
-    //there was actually an item to delete
-    if (val_size != 0) {
-        --cache->num_elements;
+    if (val_size > 0) {
+        printf("succesfully deleted %s\n", key);
+
         cache->memused -= val_size;
+        --cache->num_elements;
         evict_delete(cache->evict, key);
+
+        assert(cache->num_elements != uint32_t(-1));
+    } else {
+        printf("failed to deleted %s\n", key);
     }
 }
 
@@ -214,12 +234,4 @@ void destroy_cache(cache_t cache)
     cache = NULL;
 }
 
-void print_cache(cache_t cache)
-{
-    for (uint32_t i = 0; i < cache->num_buckets; ++i) {
-        if (ll_size(cache->buckets[i]) > 0){
-            printf("hash=%" PRIu32 " has dbll: \n", i);
-            rep_list(cache->buckets[i]);
-        }
-    }
-}
+

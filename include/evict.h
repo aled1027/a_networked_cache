@@ -31,3 +31,5 @@ void evict_destroy(evict_t evict);
 // User of evict_select_for_removal is responsible for freeing the memory
 // Does not actually remove the key from the eviction object, evict_delete must still be called
 key_type evict_select_for_removal(evict_t evict);
+
+void evict_print(evict_t evict);

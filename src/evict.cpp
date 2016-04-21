@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "evict.h"
 
+#include <iostream>
+
 struct evict_obj
 {
     // we use a naiive queue to implement LRU
@@ -102,8 +104,9 @@ void evict_delete(evict_t evict, key_type key)
             failed = false;
         }
     }
+
     if (failed) {
-        fprintf(stderr, "key not found in eviction key\n");
+        fprintf(stderr, "key not found in eviction\n");
     }
 }
 
@@ -122,15 +125,27 @@ key_type evict_select_for_removal(evict_t evict)
 {
     while (evict->front < evict->rear) {
         if (evict->queue[evict->front]) {
-            key_type ret_key = (key_type)calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
-            strcpy((char*) ret_key, (char*) evict->queue[evict->front]);
-            return ret_key;
+            //key_type ret_key = (key_type)calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
+            return evict->queue[evict->front];
+            //strcpy((char*) ret_key, (char*) evict->queue[evict->front]);
+            //return ret_key;
         }
         ++evict->front;
     }
 
     fprintf(stderr, "no keys to evict\n");
     return NULL;
+}
+
+void evict_print(const evict_t evict) 
+{
+    printf("PRINTING EVICT OBJ\n");
+    printf("front = %" PRIu32 " and rear = %" PRIu32 "\n", evict->front, evict->rear);
+    for (uint32_t i = evict->front; i < evict->rear; i++) {
+        if (evict->queue[i]) {
+            printf("evict->queue[%d] = %s\n", i, evict->queue[i]);
+        }
+    }
 }
 
 
