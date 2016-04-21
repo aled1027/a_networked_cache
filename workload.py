@@ -21,8 +21,9 @@ TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 
 #global costants for testing the cache at various "rates" (really just sleep times)
 #RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
-#RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
-RATES = [500]
+#RATES = [500]
+#RATES = [100, 250, 500, 1000, 2000, 3000]
+RATES = [35000, 50000]
 SUSTAINED_FOR = 30
 MEAN_RESP_TIME = .001
 

@@ -87,7 +87,7 @@ void evict_get(evict_t evict, key_type key)
         }
     }
     if (failed) {
-        fprintf(stderr, "key not found\n");
+        //fprintf(stderr, "key not found\n");
     }
 }
 
@@ -106,7 +106,7 @@ void evict_delete(evict_t evict, key_type key)
     }
 
     if (failed) {
-        fprintf(stderr, "key not found in eviction\n");
+        //fprintf(stderr, "key not found in eviction\n");
     }
 }
 
@@ -133,7 +133,7 @@ key_type evict_select_for_removal(evict_t evict)
         ++evict->front;
     }
 
-    fprintf(stderr, "no keys to evict\n");
+    //fprintf(stderr, "no keys to evict\n");
     return NULL;
 }
 

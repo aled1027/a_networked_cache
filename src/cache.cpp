@@ -206,7 +206,7 @@ void cache_delete(cache_t cache, key_type key)
         evict_delete(cache->evict, key);
 
     } else {
-        fprintf(stderr, "failed to delete %s\n", key);
+        //fprintf(stderr, "failed to delete %s\n", key);
     }
 }
 
