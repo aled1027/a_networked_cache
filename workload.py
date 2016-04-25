@@ -19,8 +19,7 @@ data_filename = "workload_data.tsv"
 
 #global costants for testing the cache at various "rates" (really just sleep times)
 #RATES = [5, 25, 50, 100, 250, 500, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1200, 1500]
-#RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
-RATES = [500, 1000, 2000]
+RATES = [100, 250, 500, 1000, 2000, 3000, 3250, 3500, 3750, 4000, 5000, 10000]
 SUSTAINED_FOR = 10
 
 #global variables for keeping track of requests and responses
@@ -100,6 +99,9 @@ def udp_get(sock):
         return ret_dict
     except OSError:
         print("udp::get we closed this socket")
+        return None
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
         return None
 
 def udp_send(sock, key):
@@ -189,9 +191,6 @@ def setup_cache():
     print("...done pre-populating the cache")
 
 def shutdown_cache():
-    global KEYS, VALUES
-    KEYS = []
-    VALUES = []
     resp = req.post(TCP_BASE + '/shutdown')
     time.sleep(1) # give time for the server to setup
 
@@ -285,8 +284,7 @@ def task_master():
         elapsed = datetime.timedelta()
 
         try:
-            #port_no = 8082 + i
-            port_no = 8082
+            port_no = 8082 + i
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.bind((host_name, port_no))
@@ -310,17 +308,37 @@ def task_master():
 
             analyze_data(rate)
 
-
             #sleep for some time so the server can catch up
             sleep_time = 5
             time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            raise
+            #raise
 
     print("done")
     sys.exit()
 
+def simple_simulation():
+    setup_cache()
+    port_no = 8082
+    host_name = "127.0.0.1"
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((host_name, port_no))
+
+    for i in range(100):
+        try:
+            key = random.choice(KEYS)
+            sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            #raise
+        time.sleep(.001)
+    sock.close()
+    shutdown_cache()
+
+
+
 if __name__ == '__main__':
     task_master()
+    #simple_simulation()
 
