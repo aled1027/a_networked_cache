@@ -10,7 +10,10 @@ project (a_networked_cache)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -O0 -g")
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -O3 -pg")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+
 
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
@@ -64,6 +67,12 @@ add_custom_target(gdb_server
 
 add_custom_target(run
     ./a_networked_cache
+    DEPENDS a_networked_cache
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+    )
+
+add_custom_target(prof
+    COMMAND gprof ./a_networked_cache
     DEPENDS a_networked_cache
     WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
     )

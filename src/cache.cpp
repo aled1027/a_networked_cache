@@ -148,6 +148,12 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
         // notify evict that key has been touched.
         // move to rear of LRU
         evict_get(cache->evict, key); 
+        uint32_t old_val_size = ll_remove_key(e, key);
+        assert(old_val_size == search_val_size);
+        ll_insert(e, key, val, val_size); // insert into double linked list
+
+        cache->memused -= old_val_size;
+        cache->memused += val_size;
         return;
     }
 
@@ -204,9 +210,6 @@ void cache_delete(cache_t cache, key_type key)
         cache->memused -= val_size;
         --cache->num_elements;
         evict_delete(cache->evict, key);
-
-    } else {
-        //fprintf(stderr, "failed to delete %s\n", key);
     }
 }
 
