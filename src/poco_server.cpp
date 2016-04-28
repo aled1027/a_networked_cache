@@ -117,12 +117,16 @@ class MyUDPServer : public Poco::Task {
                     key = (key_type) strdup(tokens[1].c_str());
                 } else { 
                     //if we are using python UDP, get key from message
+                    debug("ok python client");
                     std::string str_buffer(buffer);
                     key = (key_type) strdup(str_buffer.c_str());
                 }
 
                 // Resume normal track
-                val = cache_get(cache, key, &val_size); 
+                val = cache_get(cache, key, &val_size);
+                std::ostringstream db;
+                db << "{\"key\": \"" << key << "\", \"value\": \"" << val << "\"}";
+                debug(db.str());
 
                 if (!val) {
                     // if key is not in cache
@@ -151,6 +155,7 @@ class MyUDPServer : public Poco::Task {
                     debug(debug_get.str());
                     dgs.sendTo(msg.data(), msg.size(), sender);
                 }
+                debug("got to the end!");
                 free((char*) key);
                 free((void*) val);
             }
