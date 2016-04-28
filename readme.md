@@ -39,7 +39,7 @@ Then run `cmake .` to recreate the makefile.
 
 # Multicache
 
-## Threading
+## MultiThreading
 Poco automatically multithreads makes the TCP server. 
 Poco uses a thread pool and assigns incoming connections to a thread.
 The documentations states that the number of threads used is adjusted dynamically depending on the number of connections
@@ -47,6 +47,10 @@ waiting; however, w
 For more information on Poco's TCP server multithreading, see the Poco docs on TCPServer.
 
 Our UDP server, which we wrote using Poco's datagram socket, is not automatically multithreaded.  
+We multithread our UDP server by opening up many UDP servers on multiple threads using Poco's task manager.
+Task manager takes as input a unique pointer (I think, or something like it), and it runs and manages the thread.
+Task manager has the nice feature where we can easily kill the threads when we decide to shutdown the server.
+This code is `src/poco_server.cpp::Server::start()`.
 
 ## Locking
 In order to lock, we used Poco's FastMutex mutex and a ScopedLock.
