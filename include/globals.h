@@ -23,6 +23,7 @@ namespace globals
     extern const bool IS_PYTHON_CLIENT;
     extern const bool DEBUG_ON;
     extern const uint32_t DEFAULT_MAXMEM;
+    extern const uint32_t NUM_UDP_THREADS;
 }
 
 void print_vector_string(std::vector<std::string> v);

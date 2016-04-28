@@ -11,6 +11,7 @@ namespace globals
     const bool IS_PYTHON_CLIENT = false;
     const bool DEBUG_ON = false;
     const uint32_t DEFAULT_MAXMEM = 100000;
+    const uint32_t NUM_UDP_THREADS = 4;
 }
 
 void debug(const std::string& s) {

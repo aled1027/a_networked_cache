@@ -390,8 +390,10 @@ void Server::start()
     if (globals::USE_UDP) {
         debug("initializing server with TCP and UDP");
         Poco::TaskManager task_manager;
-        MyUDPServer* udp_server_task = new MyUDPServer("task1");
-        task_manager.start(udp_server_task); // tm takes ownership
+
+        for (uint32_t i = 0; i < globals::NUM_UDP_THREADS; i++) {
+            task_manager.start(new MyUDPServer("task"));
+        }
 
         MyTCPServer tcp_server;
         tcp_server.start();
