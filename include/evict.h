@@ -5,7 +5,6 @@
 typedef const uint8_t *key_type; //TODO - ask eitan what the best way to do types here is 
 struct evict_obj;
 typedef struct evict_obj *evict_t;
-typedef uint64_t (*hash_func)(key_type key);
 
 // creates evict object and returns a pointer to it
 // takes as input the max size of queue, but the size of the

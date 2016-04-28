@@ -8,11 +8,9 @@ namespace globals
     const int UDP_PORT = 8081;
     const char *HOST = "127.0.0.1";
     const bool USE_UDP = true;
-    const bool IS_PYTHON_CLIENT = true;
+    const bool IS_PYTHON_CLIENT = false;
     const bool DEBUG_ON = false;
-    const bool IS_LOCKING = true;
-    const uint32_t DEFAULT_MAXMEM = 1000;
-    Mutex mutex;
+    const uint32_t DEFAULT_MAXMEM = 100000;
 }
 
 void debug(const std::string& s) {

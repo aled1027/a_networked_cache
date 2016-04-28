@@ -162,9 +162,9 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
     debug("got a request");
 
     // lock
-    {
-        Mutex::ScopedLock lock(globals::mutex);
-        {
+    //{
+    //    Mutex::ScopedLock lock(globals::mutex);
+    //    {
             if (req.getMethod() == "POST") {
                 post(req, resp);
             } else if (req.getMethod() == "GET") {
@@ -178,8 +178,8 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
             } else {
                 bad_request(req, resp);
             }
-        }
-    }
+    //    }
+    //}
 }
 
 
@@ -385,7 +385,8 @@ int MyTCPServer::main(const std::vector<std::string> &)
     return Application::EXIT_OK;
 }
 
-void Server::start() {
+void Server::start() 
+{
     if (globals::USE_UDP) {
         debug("initializing server with TCP and UDP");
         Poco::TaskManager task_manager;

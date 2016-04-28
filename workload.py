@@ -188,9 +188,11 @@ def setup_cache():
     print("\n********************************************")
     print("adding some key value pairs to the cache... slowly")
     for key, value in generate_key_val(MAX_PAIRS):
+        print(key, value)
         tcp_put(key, value)
         time.sleep(.01)
         print("adding", key, value)
+        print(key, value)
     print("...done pre-populating the cache")
 
 def shutdown_cache():
@@ -323,8 +325,9 @@ def task_master():
 
 def simple_simulation():
 
-    num_gets = 100
-    delay = .01
+    num_gets = 100000
+    delay = 0.0
+    num_threads = 10
 
     setup_cache()
 
@@ -335,28 +338,23 @@ def simple_simulation():
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((host_name, port_no))
         for i in range(num_gets):
-            if i % 1000 == 0:
-                print(i)
             try:
                 key = random.choice(KEYS)
                 sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
-                print(udp_get(sock))
+                #print(udp_get(sock))
             except:
                 print("Unexpected error:", sys.exc_info()[0])
-            time.sleep(delay)
+            #time.sleep(delay)
         sock.close()
 
-    t = Thread(target=simple_gets, args=(num_gets, delay, port_no))
-    u = Thread(target=simple_gets, args=(num_gets, delay, port_no + 1))
-    #v = Thread(target=simple_gets, args=(num_gets, delay, port_no + 2))
+    threads = []
+    for i in range(num_threads):
+        t = Thread(target=simple_gets, args=(num_gets, delay, port_no + i))
+        t.start()
+        threads.append(t)
 
-    t.start()
-    u.start()
-    #v.start()
-
-    t.join()
-    u.join()
-    #v.join()
+    for t in threads:
+        t.join()
 
     shutdown_cache()
 

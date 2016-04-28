@@ -4,19 +4,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 
 #include "evict.h"
 #include "dbLL.h"
 #include "cache.h"
 
-#include <iostream>
+#include <Poco/Mutex.h>
+#include <Poco/ScopedLock.h>
 
-const bool debug = false;
+using Poco::Mutex;
 
-// What is this best practice for constants? Put them at top of file or in function?
 const float RESET_LOAD_FACTOR = 0.1;
 const float MAX_LOAD_FACTOR = 0.5;
 typedef struct _dbLL_t hash_bucket;
+
 
 struct cache_obj
 {
@@ -28,6 +30,8 @@ struct cache_obj
     hash_bucket **buckets; // so buckets[i] = pointer to double linked list
     hash_func hash; // should only be accessed via cache_hash
     evict_t evict;
+    Mutex cache_mutex;
+    Mutex hash_mutex;
 
     // buckets[i] = pointer to double linked list
     // each node in double linked list is a hash-bucket
@@ -47,7 +51,16 @@ void print_cache(cache_t cache)
 uint64_t modified_jenkins(key_type key)
 {
     // https://en.wikipedia.org/wiki/Jenkins_hash_function
-    uint32_t hash = *key;
+
+    // turn key_type (const char*) into uint32_t
+    uint32_t hash = 0;
+    size_t length = strlen((const char*) key);
+    for (uint32_t i = 0; i < length; i++) {
+        hash += (uint32_t) key[i];
+
+    }
+
+    // do hash operations on uint32_t version of key
     hash += (hash << 10);
     hash ^= (hash >> 6);
     hash += (hash << 3);
@@ -56,8 +69,7 @@ uint64_t modified_jenkins(key_type key)
     return (uint64_t) hash;
 }
 
-
-static void print_key(key_type key)
+void print_key(key_type key)
 {
     uint32_t i = 0;
     while (key[i]) {
@@ -67,16 +79,56 @@ static void print_key(key_type key)
     printf("\n");
 }
 
-static uint64_t cache_hash(cache_t cache, key_type key)
+uint64_t cache_hash(cache_t cache, key_type key)
 {
     return cache->hash(key) % cache->num_buckets;
 }
 
-static void cache_dynamic_resize(cache_t cache)
+void cache_delete(cache_t cache, key_type key)
 {
+    {
+        Mutex::ScopedLock lock(cache->cache_mutex);
+        {
+            uint64_t hash = cache_hash(cache, key);
+            hash_bucket *e = cache->buckets[hash];
+            // val_size will be 0 only if there is no item to remove
+
+            uint32_t val_size = ll_remove_key(e, key);
+            if (val_size > 0) {
+
+                cache->memused -= val_size;
+                --cache->num_elements;
+                evict_delete(cache->evict, key);
+            }
+        }
+    }
+}
+
+void cache_safe_delete(cache_t cache, key_type key)
+{
+    // cache_mutex should be locked
+    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already be locked");
+
+    uint64_t hash = cache_hash(cache, key);
+    hash_bucket *e = cache->buckets[hash];
+    // val_size will be 0 only if there is no item to remove
+
+    uint32_t val_size = ll_remove_key(e, key);
+    if (val_size > 0) {
+
+        cache->memused -= val_size;
+        --cache->num_elements;
+        evict_delete(cache->evict, key);
+    }
+}
+
+void cache_dynamic_resize(cache_t cache)
+{
+    // SHOULD ALREADY BE LOCKED BY CACHE_SET WHO CALLS THIS
+    // TODO is there a way to assert this?
+
     // dynamically resizes size of hash table, via changing num_buckets
     // and copying key-value pairs IF the current load factor exceeds
-
     float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
     if (load_factor > MAX_LOAD_FACTOR) {
         uint64_t new_num_buckets = (uint64_t) ((float) cache->num_elements / RESET_LOAD_FACTOR);
@@ -133,83 +185,73 @@ cache_t create_cache(uint64_t maxmem)
 
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
+    {
+        Mutex::ScopedLock lock(cache->cache_mutex);
+        {
+            if (val_size == 0) {
+                return;
+            }
 
-    if (val_size == 0) {
-        return;
+            uint64_t hash = cache_hash(cache, key);
+            hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
+
+            // TODO check this block
+            // check if the key exists in the cache already
+            uint32_t search_val_size;
+            val_type res = ll_search(e, key, &search_val_size);
+            if (res) {
+                // notify evict that key has been touched.
+                // move to rear of LRU
+                evict_get(cache->evict, key); 
+                uint32_t old_val_size = ll_remove_key(e, key);
+                assert(old_val_size == search_val_size);
+                ll_insert(e, key, val, val_size); // insert into double linked list
+
+                cache->memused -= old_val_size;
+                cache->memused += val_size;
+                return;
+            }
+
+            // case where the value side being inserted is greater than max_mem
+            if (val_size > cache->maxmem){
+                printf("Could not store that value. Sorry!\n");
+                printf("cache->maxmem: %" PRIu64 "; val_size: %d", cache->maxmem, val_size);
+                return;
+            }
+
+            // eviction, if necessary
+            while (cache->memused + val_size > cache->maxmem) {
+                key_type k = evict_select_for_removal(cache->evict);
+                assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
+                cache_safe_delete(cache, k);
+                cache_safe_delete(cache, key);
+            }
+
+            // insert <key,value> normally into cache
+            ll_insert(e, key, val, val_size); // insert into double linked list
+            evict_set(cache->evict, key); // notify evict object that key was inserted
+            cache->memused += val_size;
+            ++cache->num_elements;
+
+            cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
+        }
     }
-
-    uint64_t hash = cache_hash(cache, key);
-    hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
-
-    // check if the key exists in the cache already
-    uint32_t search_val_size;
-    val_type res = ll_search(e, key, &search_val_size);
-    if (res) {
-        // notify evict that key has been touched.
-        // move to rear of LRU
-        evict_get(cache->evict, key); 
-        uint32_t old_val_size = ll_remove_key(e, key);
-        assert(old_val_size == search_val_size);
-        ll_insert(e, key, val, val_size); // insert into double linked list
-
-        cache->memused -= old_val_size;
-        cache->memused += val_size;
-        return;
-    }
-
-    // case where the value side being inserted is greater than max_mem
-    if (val_size > cache->maxmem){
-        printf("Could not store that value. Sorry!\n");
-        printf("cache->maxmem: %" PRIu64 "; val_size: %d", cache->maxmem, val_size);
-        return;
-    }
-
-    // eviction, if necessary
-    while (cache->memused + val_size > cache->maxmem) {
-        key_type k = evict_select_for_removal(cache->evict);
-        assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
-        cache_delete(cache, k);
-    }
-
-    // insert <key,value> normally into cache
-    ll_insert(e, key, val, val_size); // insert into double linked list
-    evict_set(cache->evict, key); // notify evict object that key was inserted
-    cache->memused += val_size;
-    ++cache->num_elements;
-
-    cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
 }
 
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 {
-    uint64_t hash = cache_hash(cache, key);
+    {
+        Mutex::ScopedLock lock(cache->cache_mutex);
+        {
+            uint64_t hash = cache_hash(cache, key);
 
-    if (debug) {
-        printf("key = <%s>\n", key);
-        printf("getting key = %" PRIu8 "\n", *key);
-        printf("hash = %" PRIu64 "\n\n", hash);
-    }
-
-    hash_bucket *e = cache->buckets[hash];
-    void *res = (void *) ll_search(e, key, val_size);
-    if(res != NULL){
-        evict_get(cache->evict, key);
-    }
-    return res;
-}
-
-void cache_delete(cache_t cache, key_type key)
-{
-    uint64_t hash = cache_hash(cache, key);
-    hash_bucket *e = cache->buckets[hash];
-    // val_size will be 0 only if there is no item to remove
-
-    uint32_t val_size = ll_remove_key(e, key);
-    if (val_size > 0) {
-
-        cache->memused -= val_size;
-        --cache->num_elements;
-        evict_delete(cache->evict, key);
+            hash_bucket *e = cache->buckets[hash];
+            void *res = (void *) ll_search(e, key, val_size);
+            if(res != NULL){
+                evict_get(cache->evict, key);
+            }
+            return res;
+        }
     }
 }
 
@@ -220,17 +262,22 @@ uint64_t cache_space_used(cache_t cache)
 
 void destroy_cache(cache_t cache)
 {
-    for (uint32_t i = 0; i < cache->num_buckets; i++) {
-        destroy_list(cache->buckets[i]);
-    }
+    {
+        Mutex::ScopedLock lock(cache->cache_mutex);
+        {
+            for (uint32_t i = 0; i < cache->num_buckets; i++) {
+                destroy_list(cache->buckets[i]);
+            }
 
-    evict_destroy(cache->evict);
-    free(cache->evict);
-    free(cache->buckets);
-    cache->evict = NULL;
-    cache->buckets = NULL;
-    free(cache);
-    cache = NULL;
+            evict_destroy(cache->evict);
+            free(cache->evict);
+            free(cache->buckets);
+            cache->evict = NULL;
+            cache->buckets = NULL;
+            free(cache);
+            cache = NULL;
+        }
+    }
 }
 
 

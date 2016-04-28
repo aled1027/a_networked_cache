@@ -10,10 +10,9 @@ project (a_networked_cache)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -O3 -pg")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
-
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -pthread -Og -pg -g")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread -pg -Og -g")
+SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread  -pg -Og -g")
 
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
@@ -32,8 +31,7 @@ set(EXTERNAL_LIBS
     )
 
 add_executable(a_networked_cache "src/main.cpp" "src/cache_tests.cpp" "src/cache.cpp" 
-    "src/dbLL.cpp" "src/dbLL_tests.cpp" "src/evict_tests.cpp" "src/evict.cpp" "src/node.cpp" "src/globals.cpp" "src/poco_client.cpp" "src/poco_server.cpp" "src/network_tests.cpp" "src/getRealTime.cpp"
-    "src/distributions.cpp")
+    "src/dbLL.cpp" "src/dbLL_tests.cpp" "src/evict_tests.cpp" "src/evict.cpp" "src/node.cpp" "src/globals.cpp" "src/poco_client.cpp" "src/poco_server.cpp" "src/network_tests.cpp" "src/getRealTime.cpp")
 
 target_link_libraries(a_networked_cache 
     ${EXTERNAL_LIBS})

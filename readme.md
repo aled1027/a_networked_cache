@@ -7,13 +7,15 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 ## TODO
 - run valgrind
 - get baseline performance numbers
+- change key and valyue generation to uniform
+    - Eitan said in class that normal isn't as accurate
 - threading
     - throw lock around entire evict struct
     - necessary parts of cache
 - ideas that Eitan mentioned for improving cache:
     - a lot of cache misses
     - hash function called alot
-    
+   
 
 ## Usage
 1. Install cmake
@@ -34,6 +36,31 @@ The file `requirements.txt` lists them. To install, (ideally) activate a new vir
 If a new cpp file is added, it also needs to be added to `CMakeLists.txt`.
 Where should be clear when you look at the file.
 Then run `cmake .` to recreate the makefile.
+
+# Multicache
+
+## Threading
+Poco automatically multithreads makes the TCP server. 
+Poco uses a thread pool and assigns incoming connections to a thread.
+The documentations states that the number of threads used is adjusted dynamically depending on the number of connections
+waiting; however, w
+For more information on Poco's TCP server multithreading, see the Poco docs on TCPServer.
+
+Our UDP server, which we wrote using Poco's datagram socket, is not automatically multithreaded.  
+
+## Locking
+In order to lock, we used Poco's FastMutex mutex and a ScopedLock.
+As the name suggests, a scoped lock locks a mutex for the scope, and releases the lock at the end of the scope.
+
+We have three mutexes in our code.
+One is in the eviction object, where all evict methods, except `create_evict`, lock at the beginning of the method and
+unlock at the end.
+
+A second mutex is in the hash function; it's called `hash_mutex`.
+Not sure why I put this there right now, but in the back of my mind, I remember you, Eitan, suggesting that we put a mutex there.
+
+The final mutex is on the cache, and protects necessary cache operations; the mutex is called `cache_mutex`.
+Specifically, the cache mutex locks xxx yyy zzz TODO.
 
 # Benchmarking
 
