@@ -39,7 +39,7 @@ recv_times_get = []
 elapsed = datetime.timedelta()
 
 #globals for cache set-up
-MAX_PAIRS = 100
+MAX_PAIRS = 10
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
 WORKLOAD_CHOICE_PROB = [1., 0., 0.] #rough probability of the type of work we're going to do
 KEYS = []
@@ -117,6 +117,8 @@ def udp_send(sock, key):
     except OSError:
         print("udp::send we closed this socket")
         return None
+    except:
+        return None
 
 def recv_workload(sock, stop_task):
     '''
@@ -187,7 +189,8 @@ def setup_cache():
     print("adding some key value pairs to the cache... slowly")
     for key, value in generate_key_val(MAX_PAIRS):
         tcp_put(key, value)
-        time.sleep(.1)
+        time.sleep(.01)
+        print("adding", key, value)
     print("...done pre-populating the cache")
 
 def shutdown_cache():
@@ -319,26 +322,47 @@ def task_master():
     sys.exit()
 
 def simple_simulation():
+
+    num_gets = 100
+    delay = .01
+
     setup_cache()
+
     port_no = 8082
     host_name = "127.0.0.1"
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((host_name, port_no))
 
-    for i in range(100):
-        try:
-            key = random.choice(KEYS)
-            sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
-            #raise
-        time.sleep(.001)
-    sock.close()
+    def simple_gets(num_gets, delay, port_no):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((host_name, port_no))
+        for i in range(num_gets):
+            if i % 1000 == 0:
+                print(i)
+            try:
+                key = random.choice(KEYS)
+                sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
+                print(udp_get(sock))
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
+            time.sleep(delay)
+        sock.close()
+
+    t = Thread(target=simple_gets, args=(num_gets, delay, port_no))
+    u = Thread(target=simple_gets, args=(num_gets, delay, port_no + 1))
+    #v = Thread(target=simple_gets, args=(num_gets, delay, port_no + 2))
+
+    t.start()
+    u.start()
+    #v.start()
+
+    t.join()
+    u.join()
+    #v.join()
+
     shutdown_cache()
 
 
 
 if __name__ == '__main__':
-    task_master()
-    #simple_simulation()
+    #task_master()
+    simple_simulation()
 

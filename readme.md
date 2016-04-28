@@ -1,6 +1,20 @@
 # Let's network
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
+- sudo perf record ./asdf server
+- sudo perf report
+
+## TODO
+- run valgrind
+- get baseline performance numbers
+- threading
+    - throw lock around entire evict struct
+    - necessary parts of cache
+- ideas that Eitan mentioned for improving cache:
+    - a lot of cache misses
+    - hash function called alot
+    
+
 ## Usage
 1. Install cmake
 2. Install boost

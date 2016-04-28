@@ -11,7 +11,7 @@ namespace globals
     const bool IS_PYTHON_CLIENT = true;
     const bool DEBUG_ON = false;
     const bool IS_LOCKING = true;
-    const uint32_t DEFAULT_MAXMEM = 100;
+    const uint32_t DEFAULT_MAXMEM = 1000;
     Mutex mutex;
 }
 
