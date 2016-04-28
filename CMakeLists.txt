@@ -4,15 +4,15 @@ cmake_minimum_required (VERSION 0.0)
 project (a_networked_cache)
 
 ### BOOST ###
-#find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context filesystem date_time REQUIRED)
-#include_directories(${Boost_INCLUDE_DIR})
+find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context filesystem date_time REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
 #target_link_libraries(a_networked_cache ${Boost_LIBRARIES})
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -pthread -Og -pg -g")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread -pg -Og -g")
-SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread  -pg -Og -g")
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fpermissive -std=c++14 -pthread -O -pg -g")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg -Og -g")
+SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}  -pg -Og -g")
 
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 

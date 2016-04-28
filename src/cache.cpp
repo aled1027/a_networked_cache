@@ -186,8 +186,10 @@ cache_t create_cache(uint64_t maxmem)
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
     {
+        printf("cache_set::enter\n");
         Mutex::ScopedLock lock(cache->cache_mutex);
         {
+            printf("cache_set::lock acquired\n");
             if (val_size == 0) {
                 return;
             }
@@ -215,7 +217,7 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
             // case where the value side being inserted is greater than max_mem
             if (val_size > cache->maxmem){
                 printf("Could not store that value. Sorry!\n");
-                printf("cache->maxmem: %" PRIu64 "; val_size: %d", cache->maxmem, val_size);
+                printf("cache->maxmem: %" PRIu64 "; val_size: %d\n", cache->maxmem, val_size);
                 return;
             }
 
@@ -234,13 +236,16 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 
             cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
         }
+        printf("cache_set::exiting, unlocking\n");
     }
 }
 
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 {
     {
+        printf("cache_get::enter\n");
         Mutex::ScopedLock lock(cache->cache_mutex);
+        printf("cache_get::lock acquired\n");
         {
             uint64_t hash = cache_hash(cache, key);
 
@@ -251,6 +256,7 @@ val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
             }
             return res;
         }
+        printf("cache_get::exiting, unlocking\n");
     }
 }
 

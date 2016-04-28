@@ -38,7 +38,9 @@ evict_t evict_create(uint32_t max_size)
 void evict_set(evict_t evict, key_type key) 
 {
     {
+        printf("evict_set::enter");
         FastMutex::ScopedLock lock(evict->mutex);
+        printf("evict_set::lock acquired");
         {
             // check for resizing queue
             if (evict->rear + 1 == evict->max_queue_size) {
@@ -67,13 +69,16 @@ void evict_set(evict_t evict, key_type key)
             evict->queue[evict->rear] = key_copy;
             ++evict->rear;
         }
+        printf("evict_set::exiting, unlocking");
     }
 }
 
 void evict_get(evict_t evict, key_type key) 
 {
-    {
+    {   
+        printf("evict_get::enter");
         FastMutex::ScopedLock lock(evict->mutex);
+        printf("evict_get::lock acquired");
         {
             // key has been used, so we need to remove it from the queue, and put it on the back
             bool failed = true;
@@ -103,6 +108,7 @@ void evict_get(evict_t evict, key_type key)
                 //fprintf(stderr, "key not found\n");
             }
         }
+        printf("evict_set::exit, unlocking");
     }
 }
 
