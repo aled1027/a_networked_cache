@@ -31,7 +31,6 @@ struct cache_obj
     hash_func hash; // should only be accessed via cache_hash
     evict_t evict;
     Mutex cache_mutex;
-    Mutex hash_mutex;
 
     // buckets[i] = pointer to double linked list
     // each node in double linked list is a hash-bucket
@@ -104,10 +103,10 @@ void cache_delete(cache_t cache, key_type key)
     }
 }
 
-void cache_safe_delete(cache_t cache, key_type key)
+void cache_unsafe_delete(cache_t cache, key_type key)
 {
     // cache_mutex should be locked
-    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already be locked");
+    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
 
     uint64_t hash = cache_hash(cache, key);
     hash_bucket *e = cache->buckets[hash];
@@ -124,11 +123,12 @@ void cache_safe_delete(cache_t cache, key_type key)
 
 void cache_dynamic_resize(cache_t cache)
 {
-    // SHOULD ALREADY BE LOCKED BY CACHE_SET WHO CALLS THIS
-    // TODO is there a way to assert this?
-
     // dynamically resizes size of hash table, via changing num_buckets
     // and copying key-value pairs IF the current load factor exceeds
+
+    // cache_mutex should be locked
+    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
+
     float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
     if (load_factor > MAX_LOAD_FACTOR) {
         uint64_t new_num_buckets = (uint64_t) ((float) cache->num_elements / RESET_LOAD_FACTOR);
@@ -223,8 +223,7 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
             while (cache->memused + val_size > cache->maxmem) {
                 key_type k = evict_select_for_removal(cache->evict);
                 assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
-                cache_safe_delete(cache, k);
-                cache_safe_delete(cache, key);
+                cache_unsafe_delete(cache, k);
             }
 
             // insert <key,value> normally into cache

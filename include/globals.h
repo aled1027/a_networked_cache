@@ -1,16 +1,11 @@
 #pragma once
 
 #include <sstream>
-#include <istream>
-#include <vector>
 #include <iostream>
-#include <iterator>
-#include <assert.h>
-#include <Poco/Mutex.h>
+#include <vector>
 
 #define DEBUG
 
-using Poco::Mutex;
 
 void debug(const std::string& s);
 

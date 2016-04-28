@@ -1,6 +1,8 @@
 #include "network_tests.h"
 #include "getRealTime.h"
 
+#include <assert.h>
+
 #include <unistd.h> // usleep
 #include <iomanip>
 

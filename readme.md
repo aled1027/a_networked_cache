@@ -52,15 +52,15 @@ Our UDP server, which we wrote using Poco's datagram socket, is not automaticall
 In order to lock, we used Poco's FastMutex mutex and a ScopedLock.
 As the name suggests, a scoped lock locks a mutex for the scope, and releases the lock at the end of the scope.
 
-We have three mutexes in our code.
-One is in the eviction object, where all evict methods, except `create_evict`, lock at the beginning of the method and
-unlock at the end.
-
-A second mutex is in the hash function; it's called `hash_mutex`.
-Not sure why I put this there right now, but in the back of my mind, I remember you, Eitan, suggesting that we put a mutex there.
+We have two mutexes in our code.
+One is in the eviction object, where all evict methods, except `create_evict`, lock at the beginning of the method and unlock at the end.
 
 The final mutex is on the cache, and protects necessary cache operations; the mutex is called `cache_mutex`.
-Specifically, the cache mutex locks xxx yyy zzz TODO.
+Specifically, the cache mutex locks `cache_set`, `cache_delete`, `cache_get` and `cache_destroy`. 
+We note that cache_dynamic_resize is not locked, as it is only called from `cache_set`, so the thread should own the mutex when it is called; we added an assert to ensure this is the case.
+On a similar note, `cache_delete` is called from inside of `cache_set` and is called from the client API.
+In order to prevent a deadlock, I (Alex) broke the DRY rule and made a new function called `cache_unsafe_delete` which is the same as code as cache_delete without the lock.
+This function is only called from `cache_set`, is not accessible in the public API, and has an assert at the top to check that the thread owns the mutex.
 
 # Benchmarking
 

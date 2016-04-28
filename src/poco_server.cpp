@@ -23,6 +23,7 @@
 #include <Poco/URI.h>
 #include <Poco/Util/ServerApplication.h>
 
+#include <assert.h>
 #include "globals.h"
 #include "cache.h"
 

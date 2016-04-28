@@ -1,6 +1,10 @@
-#include "globals.h"
+#include <sstream>
+#include <istream>
+#include <vector>
+#include <iterator>
+#include <assert.h>
 
-using Poco::Mutex;
+#include "globals.h"
 
 namespace globals
 {
