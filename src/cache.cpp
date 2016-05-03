@@ -279,10 +279,10 @@ void destroy_cache(cache_t cache)
             free(cache->buckets);
             cache->evict = NULL;
             cache->buckets = NULL;
-            free(cache);
-            cache = NULL;
         }
     }
+    free(cache);
+    cache = NULL;
 }
 
 
