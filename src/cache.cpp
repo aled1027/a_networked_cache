@@ -30,11 +30,13 @@ struct cache_obj
     hash_bucket **buckets; // so buckets[i] = pointer to double linked list
     hash_func hash; // should only be accessed via cache_hash
     evict_t evict;
-    Mutex cache_mutex;
+    // Mutex cache_mutex;
 
     // buckets[i] = pointer to double linked list
     // each node in double linked list is a hash-bucket
 };
+
+Mutex cache_mutex; 
 
 void print_cache(cache_t cache)
 {
@@ -86,7 +88,7 @@ uint64_t cache_hash(cache_t cache, key_type key)
 void cache_delete(cache_t cache, key_type key)
 {
     {
-        Mutex::ScopedLock lock(cache->cache_mutex);
+        Mutex::ScopedLock lock(cache_mutex);
         {
             uint64_t hash = cache_hash(cache, key);
             hash_bucket *e = cache->buckets[hash];
@@ -106,7 +108,7 @@ void cache_delete(cache_t cache, key_type key)
 void cache_unsafe_delete(cache_t cache, key_type key)
 {
     // cache_mutex should be locked
-    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
+    assert(!cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
 
     uint64_t hash = cache_hash(cache, key);
     hash_bucket *e = cache->buckets[hash];
@@ -127,7 +129,8 @@ void cache_dynamic_resize(cache_t cache)
     // and copying key-value pairs IF the current load factor exceeds
 
     // cache_mutex should be locked
-    assert(!cache->cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
+    // assert(!cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
+    Mutex::ScopedLock lock(cache_mutex);
 
     float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
     if (load_factor > MAX_LOAD_FACTOR) {
@@ -186,10 +189,8 @@ cache_t create_cache(uint64_t maxmem)
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
     {
-        printf("cache_set::enter\n");
-        Mutex::ScopedLock lock(cache->cache_mutex);
+        Mutex::ScopedLock lock(cache_mutex);
         {
-            printf("cache_set::lock acquired\n");
             if (val_size == 0) {
                 return;
             }
@@ -236,27 +237,25 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 
             cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
         }
-        printf("cache_set::exiting, unlocking\n");
     }
 }
 
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 {
     {
-        printf("cache_get::enter\n");
-        Mutex::ScopedLock lock(cache->cache_mutex);
-        printf("cache_get::lock acquired\n");
+        Mutex::ScopedLock lock(cache_mutex);
         {
             uint64_t hash = cache_hash(cache, key);
-
             hash_bucket *e = cache->buckets[hash];
             void *res = (void *) ll_search(e, key, val_size);
+
             if(res != NULL){
+
                 evict_get(cache->evict, key);
+
             }
             return res;
         }
-        printf("cache_get::exiting, unlocking\n");
     }
 }
 
@@ -268,7 +267,7 @@ uint64_t cache_space_used(cache_t cache)
 void destroy_cache(cache_t cache)
 {
     {
-        Mutex::ScopedLock lock(cache->cache_mutex);
+        Mutex::ScopedLock lock(cache_mutex);
         {
             for (uint32_t i = 0; i < cache->num_buckets; i++) {
                 destroy_list(cache->buckets[i]);

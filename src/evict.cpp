@@ -18,8 +18,10 @@ struct evict_obj
     uint32_t max_queue_size; // sizeof(queue)
     uint32_t front; // index of top of queue
     uint32_t rear; // index of back of queue
-    FastMutex mutex;
+    // FastMutex mutex;
 };
+
+FastMutex mutex;
 
 evict_t evict_create(uint32_t max_size)
 {
@@ -38,9 +40,7 @@ evict_t evict_create(uint32_t max_size)
 void evict_set(evict_t evict, key_type key) 
 {
     {
-        printf("evict_set::enter");
-        FastMutex::ScopedLock lock(evict->mutex);
-        printf("evict_set::lock acquired");
+        FastMutex::ScopedLock lock(mutex);
         {
             // check for resizing queue
             if (evict->rear + 1 == evict->max_queue_size) {
@@ -69,16 +69,13 @@ void evict_set(evict_t evict, key_type key)
             evict->queue[evict->rear] = key_copy;
             ++evict->rear;
         }
-        printf("evict_set::exiting, unlocking");
     }
 }
 
 void evict_get(evict_t evict, key_type key) 
 {
     {   
-        printf("evict_get::enter");
-        FastMutex::ScopedLock lock(evict->mutex);
-        printf("evict_get::lock acquired");
+        FastMutex::ScopedLock lock(mutex);
         {
             // key has been used, so we need to remove it from the queue, and put it on the back
             bool failed = true;
@@ -108,14 +105,13 @@ void evict_get(evict_t evict, key_type key)
                 //fprintf(stderr, "key not found\n");
             }
         }
-        printf("evict_set::exit, unlocking");
     }
 }
 
 void evict_delete(evict_t evict, key_type key) 
 {
     {
-        FastMutex::ScopedLock lock(evict->mutex);
+        FastMutex::ScopedLock lock(mutex);
         {
             // key has been used, so we need to remove it from the queue, and put it on the back
             bool failed = true;
@@ -139,7 +135,7 @@ void evict_delete(evict_t evict, key_type key)
 void evict_destroy(evict_t evict)
 {
     {
-        FastMutex::ScopedLock lock(evict->mutex);
+        FastMutex::ScopedLock lock(mutex);
         {
             for (uint32_t i = 0; i < evict->max_queue_size; ++i) {
                 if (evict->queue[i]) {
@@ -155,7 +151,7 @@ void evict_destroy(evict_t evict)
 key_type evict_select_for_removal(evict_t evict)
 {
     {
-        FastMutex::ScopedLock lock(evict->mutex);
+        FastMutex::ScopedLock lock(mutex);
         {
     while (evict->front < evict->rear) {
         if (evict->queue[evict->front]) {
@@ -176,7 +172,7 @@ key_type evict_select_for_removal(evict_t evict)
 void evict_print(const evict_t evict) 
 {
     {
-        FastMutex::ScopedLock lock(evict->mutex);
+        FastMutex::ScopedLock lock(mutex);
         {
             printf("PRINTING EVICT OBJ\n");
             printf("front = %" PRIu32 " and rear = %" PRIu32 "\n", evict->front, evict->rear);
