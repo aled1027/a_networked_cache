@@ -12,8 +12,8 @@ namespace globals
     const int UDP_PORT = 8081;
     const char *HOST = "127.0.0.1";
     const bool USE_UDP = true;
-    const bool IS_PYTHON_CLIENT = false;
-    const bool DEBUG_ON = true;
+    const bool IS_PYTHON_CLIENT = true;
+    const bool DEBUG_ON = false;
     const uint32_t DEFAULT_MAXMEM = 100000;
     const uint32_t NUM_UDP_THREADS = 1;
 }
