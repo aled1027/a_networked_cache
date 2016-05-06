@@ -36,7 +36,7 @@ elapsed = datetime.timedelta()
 tcp_responses = Queue()
 
 #globals for cache set-up
-TIMEOUT = .02 #20 ms; any request taking longer than this will be counted as "lost"
+TIMEOUT = .025 #25 ms; any request taking longer than this will be counted as "lost"
 MAX_PAIRS = 50
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
 WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
@@ -53,7 +53,7 @@ def tcp_delete(sess, key):
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key
-        resp = sess.delete(get_string)
+        resp = sess.delete(get_string, timeout=TIMEOUT*200)
         tcp_responses.put_nowait(resp)
 
         return key
@@ -67,7 +67,7 @@ def tcp_update(sess, key='ab', value='abc'):
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key + '/' + value
-        resp = sess.put(get_string)
+        resp = sess.put(get_string, timeout=TIMEOUT*200)
         tcp_responses.put_nowait(resp)
 
         # print("tcp:: post")
@@ -205,29 +205,35 @@ def analyze_data(rate, filename):
 
     time = get_time()
     next_time = time + 1
+    print("ok, analyzing the data for reals...")
 
     while not tcp_responses.empty():
         if time > next_time:
             left = tcp_responses.qsize()
-            print("responses left to process: {}".format(left))
+            print("...responses left to process: {}".format(left))
             next_time = time + 2
         time = get_time()
-        fut_res = tcp_responses.get()
-        resp = fut_res.result()
-        elapsed = resp.elapsed.total_seconds()
-        method = resp.request.method
-        if method == 'DELETE':
-            deletes += 1
-            del_tot_elapsed += elapsed
-            if elapsed > TIMEOUT:
-                lost_delete += 1
-        elif method == 'PUT':
-            puts += 1
-            put_tot_elapsed += elapsed
-            if elapsed > TIMEOUT:
-                lost_put += 1
-        else:
-            print("what? not a request method we care about")
+        try:
+            fut_res = tcp_responses.get()
+            resp = fut_res.result()
+            elapsed = resp.elapsed.total_seconds()
+            method = resp.request.method
+            if method == 'DELETE':
+                deletes += 1
+                del_tot_elapsed += elapsed
+                if elapsed > TIMEOUT:
+                    lost_delete += 1
+            elif method == 'PUT':
+                puts += 1
+                put_tot_elapsed += elapsed
+                if elapsed > TIMEOUT:
+                    lost_put += 1
+            else:
+                print("what? not a request method we care about")
+        except ConnectionError as e:
+            print("oops: {}".format(e))
+        except req.exceptions.Timeout as e:
+            print("oops Timeout error: {}".format(e))
 
     if puts:
         try:
@@ -246,6 +252,8 @@ def analyze_data(rate, filename):
             mean_delete = 0.0
     else:
         mean_delete = 0.0
+
+    print("done with tcp analysis")
     # end tcp work
 
     #prepare data from requests sent via udp
@@ -258,6 +266,8 @@ def analyze_data(rate, filename):
     except ZeroDivisionError:
         print("Ah! I guess we lost all the get packets!")
         mean_get = 0.0
+
+    print("done with udp analysis")
     #end udp work
 
     #total requests sent, requests lost, mean time (rough weighted avg)
@@ -285,7 +295,7 @@ def task_master():
 
     #create file name, open file, write header 
     nowish = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
-    filename = "workload_data{}.tsv".format(nowish)
+    filename = "data/workload_data{}.csv".format(nowish)
 
     with open(filename, 'a') as f:
         f.write("\n#rate(req/sec)\t mean(sec)\t total_sent\t total_recieved\t get_mean(sec)\t \
@@ -301,7 +311,7 @@ def task_master():
         recv_times_get = []
 
         try:
-            port_no = 8082 + i
+            port_no = 8082 + i%10
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -324,11 +334,10 @@ def task_master():
             task.join()
             task_getter.join() # doesn't work on Alex's computer
 
-            print("ok, analyzing data")
             analyze_data(rate, filename)
             shutdown_cache()
             #sleep for some time so the server can catch up
-            sleep_time = 5
+            sleep_time = 8
             time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
