@@ -50,6 +50,8 @@ Task manager takes as input a unique pointer (I think, or something like it), an
 Task manager has the nice feature where we can easily kill the threads when we decide to shutdown the server.
 The UDP multithreading code can be found at `src/poco_server.cpp::Server::start()`.
 
+The number of UDP threads is variable - the value is set in `globals.cpp` - but I usually have it set to use 4 threads.
+
 ## Locking
 We used Poco's `FastMutex::mutex` and `FastMutex::ScopedLock` to provide locking functionality.
 As the name suggests, a scoped lock locks a mutex for the scope, releasing the lock at the end of the scope.
@@ -161,4 +163,11 @@ We note that for a workload of 100% GET requests, the mean response time begins 
 
 
 
+## FAQ Checklist
+1. Do you have -Og? clang doesn't -Og.
+1. Are you compiling with boost?
+3. Is `globals::IS_PYTHON_CLIENT` set correctly?
+4. Is `globals::USE_UDP` set correctly?
+5. Are `globals::HOST` and the client-side host set correctly?
+6. Too many evictions? Check default `globals::MAXMEM`.
 
