@@ -3,6 +3,7 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 
 - sudo perf record ./asdf server
 - sudo perf report
+- avg time for 1000: 0.001030 for gets
 
 ## TODO
 - run valgrind
@@ -12,6 +13,27 @@ A networked look-aside cache that can be access asynchronously by multiple clien
 - ideas that Eitan mentioned for improving cache:
     - a lot of cache misses
     - hash function called alot
+
+## Optimizing
+Using perf, evict_get uses most time of anything.
+Specifically the if statement. 
+My hypothesis: searching for memory of pointers.
+0.69%
+At 0.40%, evict_obj was pretty slow.
+
+Above all this stuff was thread locking functions.
+evict_delete at 0.37%
+modified_jenkins at 0.29%
+normal cache operations, like cache_get, cache_set, cache_delete were around 0.05%.
+MyRequestHandler::handleRequest 0.13%
+
+- rewrote cache with std::set.
+- put evict calls outside of cache_mutex locks, since they have their own lock.
+- moved modified_jenkins calls outside of scoped_lock, because it's threadsafe.
+- moved check for cache_dynamic_resize to function where it is being called - saves a function call.
+
+
+
    
 
 ## Usage

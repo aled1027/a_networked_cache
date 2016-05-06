@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <time.h>
 
+#include <iostream>
 #include "dbLL_tests.h"
 #include "cache_tests.h"
 #include "evict.h"
@@ -14,17 +15,7 @@
 #define my_assert(value, string) \
 {if (!(value)) { printf("!!!FAILURE!!! %s\n", string);}}
 
-static void print_key(key_type key)
-{
-    uint32_t i = 0;
-    while (key[i]) {
-        printf("%" PRIu32 ", ", key[i]);
-        ++i;
-    }
-    printf("\n");
-}
-
-static void test_evict_object()
+void test_evict_object()
 {
     printf("Running evict general test\n");
     evict_t evict = evict_create(10);
@@ -54,7 +45,7 @@ static void test_evict_object()
     free(evict);
 }
 
-static void test_evict_duplicate_set() 
+void test_evict_duplicate_set() 
 {
     printf("Running evict duplicate test\n");
     evict_t evict = evict_create(10);
@@ -84,5 +75,56 @@ void evict_tests()
     test_evict_object();
     test_evict_duplicate_set();
 }
+
+void new_evict_tests() {
+    printf("***Running new evict tests***\n");
+    EvictObject e;
+
+    uint8_t a[2] = {'a', '\0'};
+    uint8_t b[2] = {'b', '\0'};
+    uint8_t c[2] = {'c', '\0'};
+
+
+    e.set(a);
+    e.set(a);
+    e.set(a);
+    e.set(a);
+    e.get(a);
+    e.set(b);
+    e.remove(a);
+
+    e.set(b);
+    e.set(c);
+    e.remove(b);
+    e.set(a);
+    e.remove(a);
+    e.get(b);
+    e.set(b);
+    
+    key_type k = e.select_for_removal();
+    if (k) {
+        my_assert(strcmp((char*) k, (char*) a), "a was removed, should not have been selected");
+        std::cout << "removing " << k << std::endl;
+        e.remove(k);
+    }
+
+    k = e.select_for_removal();
+    if (k) {
+        my_assert(strcmp((char*) k, (char*) a), "a was removed, should not have been selected");
+        std::cout << "removing " << k << std::endl;
+        e.remove(k);
+    }
+
+    k = e.select_for_removal();
+
+    if (k) {
+        my_assert(strcmp((char*) k, (char*) a), "a was removed, should not have been selected");
+        std::cout << "removing " << k << std::endl;
+        e.remove(k);
+    }
+    
+    std::cout << "Probably passsed evict tests" << std::endl;
+}
+
 
 

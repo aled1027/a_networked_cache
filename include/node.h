@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef const uint8_t *key_type;
+typedef const uint8_t* key_type;
 typedef const void *val_type;
 
 typedef struct _node_t node_t;

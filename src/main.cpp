@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <assert.h>
+#include "evict_tests.h"
 #include "cache_tests.h"
 #include "network_tests.h"
 #include "poco_server.h"
@@ -19,6 +20,7 @@
 int main(int argc, char* argv[]) {
     assert(argc == 2);
     //cache_tests();
+    //new_evict_tests();
     network_tests(argv[1]);
 
     return 0;    

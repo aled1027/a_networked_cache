@@ -9,7 +9,8 @@ import random
 from threading import Thread, Event, Timer
 import requests as req
 from requests_futures.sessions import FuturesSession
-from queue import Queue
+#from queue import Queue
+from Queue import Queue
 import numpy as np
 
 #global constants for connecting to remote server
@@ -21,7 +22,8 @@ data_filename = "workload_data.tsv"
 
 #global costants for testing the cache at various "rates" (really just sleep times)
 #note: will often stall after ~750 req/sec on @ifjorissen's setup
-RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+#RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+RATES = [1000]
 SUSTAINED_FOR = 15
 
 #global variables for keeping track of get requests and responses
@@ -37,7 +39,7 @@ tcp_responses = Queue()
 
 #globals for cache set-up
 TIMEOUT = .02 #20 ms; any request taking longer than this will be counted as "lost"
-MAX_PAIRS = 50
+MAX_PAIRS = 100
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
 WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
 KEYS = []
@@ -261,7 +263,7 @@ def analyze_data(rate, filename):
     #end udp work
 
     #total requests sent, requests lost, mean time (rough weighted avg)
-    sent_req = sent_req_get + puts + deletes 
+    sent_req = sent_req_get + puts + deletes
     lost = lost_get + lost_put + lost_delete
     mean_time = (mean_get*(sent_req_get/sent_req) + mean_delete*(deletes/sent_req) + mean_put*(puts/sent_req))
 
@@ -283,7 +285,7 @@ def task_master():
 
     global sent_req_get, recv_res_get, sent_times_get, recv_times_get
 
-    #create file name, open file, write header 
+    #create file name, open file, write header
     nowish = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
     filename = "workload_data{}.tsv".format(nowish)
 
@@ -317,12 +319,16 @@ def task_master():
             task.start()
             task_getter.start()
 
+            print("HERE")
             time.sleep(SUSTAINED_FOR)
+            print("HERE")
             task_stop.set()
+            print("HERE")
             sock.close()
+            print("HERE")
 
             task.join()
-            task_getter.join() # doesn't work on Alex's computer
+            #task_getter.join() # doesn't work on Alex's computer
 
             print("ok, analyzing data")
             analyze_data(rate, filename)
@@ -332,14 +338,10 @@ def task_master():
             time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            #raise
+            raise
 
     print("done")
     sys.exit()
-
-
-
-
 
 if __name__ == '__main__':
     task_master()

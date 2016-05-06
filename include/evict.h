@@ -1,6 +1,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <set>
 
 typedef const uint8_t *key_type; //TODO - ask eitan what the best way to do types here is 
 struct evict_obj;
@@ -32,3 +33,18 @@ void evict_destroy(evict_t evict);
 key_type evict_select_for_removal(evict_t evict);
 
 void evict_print(evict_t evict);
+
+class EvictObject {
+    private:
+        std::set<std::string> key_set;
+        key_type *queue; // our queue
+        uint32_t max_queue_size; // sizeof(queue)
+        uint32_t front; // index of top of queue
+        uint32_t rear; // index of back of queue
+    public:
+        void set(key_type key);
+        void get(key_type key);
+        void remove(key_type key);
+        key_type select_for_removal();
+        void print();
+};

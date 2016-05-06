@@ -1,10 +1,12 @@
 #include <assert.h>
+#include <algorithm>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <Poco/Mutex.h>
 
+#include "globals.h"
 #include "evict.h"
 
 #include <iostream>
@@ -56,11 +58,11 @@ void evict_set(evict_t evict, key_type key)
             //
             // check if key already in queue:
             for (uint32_t i = evict->front; i < evict->rear; ++i) {
-               if (evict->queue[i] && strcmp((char*) evict->queue[i], (char*) key) == 0) {
-                   free((void*) evict->queue[i]);
-                   evict->queue[i] = NULL;
-                   break;
-               }
+                if (evict->queue[i] && strcmp((char*) evict->queue[i], (char*) key) == 0) {
+                    free((void*) evict->queue[i]);
+                    evict->queue[i] = NULL;
+                    break;
+                }
             }
 
             // put key on back of queue
@@ -153,18 +155,18 @@ key_type evict_select_for_removal(evict_t evict)
     {
         FastMutex::ScopedLock lock(mutex);
         {
-    while (evict->front < evict->rear) {
-        if (evict->queue[evict->front]) {
-            //key_type ret_key = (key_type)calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
-            return evict->queue[evict->front];
-            //strcpy((char*) ret_key, (char*) evict->queue[evict->front]);
-            //return ret_key;
-        }
-        ++evict->front;
-    }
+            while (evict->front < evict->rear) {
+                if (evict->queue[evict->front]) {
+                    //key_type ret_key = (key_type)calloc(strlen((const char*) evict->queue[evict->front]) + 1, sizeof(uint8_t));
+                    return evict->queue[evict->front];
+                    //strcpy((char*) ret_key, (char*) evict->queue[evict->front]);
+                    //return ret_key;
+                }
+                ++evict->front;
+            }
 
-    //fprintf(stderr, "no keys to evict\n");
-    return NULL;
+            //fprintf(stderr, "no keys to evict\n");
+            return NULL;
         }
     }
 }
@@ -187,12 +189,68 @@ void evict_print(const evict_t evict)
 
 
 
+void EvictObject::set(key_type key) {
+    // add key to key_set
+
+    debug("evictobj set");
+    {
+        FastMutex::ScopedLock lock(mutex);
+        {
+            std::string k((char*) key);
+            if (key_set.find(k) == key_set.end()) {
+                key_set.insert(k);
+            }
+        }
+    }
+    debug("evictobj leaving set");
+}
+
+void EvictObject::get(key_type key) {
+    // could do nothing, but let's assume
+    // the cache made a mistake and the value
+    // is not yet in the key_set
+
+    debug("evict obj get");
+    set(key);
+}
+
+void EvictObject::remove(key_type key) {
+    debug("evict obj remove");
+    {
+        FastMutex::ScopedLock lock(mutex);
+        {
+            std::string k((const char*) key);
+            key_set.erase(k);
+        }
+    }
+}
+
+key_type EvictObject::select_for_removal() {
+    debug("evict obj select for removal");
+    {
+        FastMutex::ScopedLock lock(mutex);
+        {
+            if (key_set.size() == 0) {
+                return NULL;
+            }
+
+            uint32_t r = rand() % key_set.size();
+            std::set<std::string>::iterator it(key_set.begin());
+            advance(it, r);
+            return (key_type) it->c_str();
+        }
+    }
+}
 
 
-
-
-
-
+void EvictObject::print() {
+    std::cout << "key_set contains:";
+    std::set<std::string>::iterator it;
+    for (it = key_set.begin(); it != key_set.end(); ++it) {
+        std::cout << ' ' << *it;
+    }
+    std::cout << std::endl;;
+}
 
 
 

@@ -285,11 +285,12 @@ void time_get_large_pair(bool is_client) {
 
 void run_tests(bool is_client) { 
     if (globals::IS_PYTHON_CLIENT && !is_client) {
-        while (true) {
+        //while (true) {
+            std::cout<< "Running a single instance of the server" << std::endl;
             std::cout<< "starting server" << std::endl;
             Server s;
             s.start();
-        }
+        //}
         return;
     }
 
@@ -317,16 +318,6 @@ void network_tests(std::string user) {
         run_tests(true);
     } else {
         run_tests(false);
-    }
-
-    std::cout << "********************************" << std::endl;
-    std::cout << "~  Running network_time_tests  ~" << std::endl;
-    std::cout << "********************************\n" << std::endl;
-
-    if (user == "client") {
-        run_time_tests(true);
-    } else {
-        run_time_tests(false);
     }
 
     std::cout << "********************************" << std::endl;

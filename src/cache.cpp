@@ -9,6 +9,7 @@
 #include "evict.h"
 #include "dbLL.h"
 #include "cache.h"
+#include "globals.h"
 
 #include <Poco/Mutex.h>
 #include <Poco/ScopedLock.h>
@@ -30,6 +31,7 @@ struct cache_obj
     hash_bucket **buckets; // so buckets[i] = pointer to double linked list
     hash_func hash; // should only be accessed via cache_hash
     evict_t evict;
+    EvictObject *evict_obj;
     // Mutex cache_mutex;
 
     // buckets[i] = pointer to double linked list
@@ -87,11 +89,11 @@ uint64_t cache_hash(cache_t cache, key_type key)
 
 void cache_delete(cache_t cache, key_type key)
 {
+    uint64_t hash = cache_hash(cache, key);
+    hash_bucket *e = cache->buckets[hash];
     {
         Mutex::ScopedLock lock(cache_mutex);
         {
-            uint64_t hash = cache_hash(cache, key);
-            hash_bucket *e = cache->buckets[hash];
             // val_size will be 0 only if there is no item to remove
 
             uint32_t val_size = ll_remove_key(e, key);
@@ -99,16 +101,16 @@ void cache_delete(cache_t cache, key_type key)
 
                 cache->memused -= val_size;
                 --cache->num_elements;
-                evict_delete(cache->evict, key);
+                //evict_delete(cache->evict, key);
             }
         }
     }
+    cache->evict_obj->remove(key);
 }
 
 void cache_unsafe_delete(cache_t cache, key_type key)
 {
-    // cache_mutex should be locked
-    assert(!cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
+    // cache_mutex should be locked -- this thread should have it
 
     uint64_t hash = cache_hash(cache, key);
     hash_bucket *e = cache->buckets[hash];
@@ -119,7 +121,8 @@ void cache_unsafe_delete(cache_t cache, key_type key)
 
         cache->memused -= val_size;
         --cache->num_elements;
-        evict_delete(cache->evict, key);
+        //evict_delete(cache->evict, key);
+        cache->evict_obj->remove(key);
     }
 }
 
@@ -128,48 +131,46 @@ void cache_dynamic_resize(cache_t cache)
     // dynamically resizes size of hash table, via changing num_buckets
     // and copying key-value pairs IF the current load factor exceeds
 
-    // cache_mutex should be locked
-    // assert(!cache_mutex.tryLock() && "cache_mutex should already own cache_mutex");
-    Mutex::ScopedLock lock(cache_mutex);
+    // thread should be locked with cache_mutex by cache_set
+    // the only function that calls this
 
-    float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
-    if (load_factor > MAX_LOAD_FACTOR) {
-        uint64_t new_num_buckets = (uint64_t) ((float) cache->num_elements / RESET_LOAD_FACTOR);
 
-        // new memory for new cache & initialize lists
-        hash_bucket **new_buckets = (hash_bucket **)calloc(new_num_buckets, sizeof(hash_bucket*));
-        assert(new_buckets && "memory");
-        for (uint32_t i = 0; i < new_num_buckets; i++){
-            new_buckets[i] = new_list();
-        }
+    uint64_t new_num_buckets = (uint64_t) ((float) cache->num_elements / RESET_LOAD_FACTOR);
 
-        // loop over all possible hash values
-        for (uint64_t i = 0; i < cache->num_buckets; i++) {
-            hash_bucket *dbll = cache->buckets[i];
-            key_type *keys = ll_get_keys(dbll);
-            uint32_t num_keys = ll_size(dbll);
-            for (uint32_t j = 0; j < num_keys; j++) {
-                uint32_t val_size;
-                val_type val = ll_search(dbll, keys[j], &val_size);
-
-                // insert key, val, val_size into dbll in new memory
-                uint64_t new_hash = cache->hash(keys[j]) % new_num_buckets;
-                hash_bucket *e = new_buckets[new_hash];
-                ll_insert(e, keys[j], val, val_size);
-                free((void *)val);
-            }
-            free(keys);
-            destroy_list(cache->buckets[i]);
-        }
-        cache->num_buckets = new_num_buckets;
-        free(cache->buckets);
-        cache->buckets = new_buckets;
+    // new memory for new cache & initialize lists
+    hash_bucket **new_buckets = (hash_bucket **)calloc(new_num_buckets, sizeof(hash_bucket*));
+    assert(new_buckets && "memory");
+    for (uint32_t i = 0; i < new_num_buckets; i++){
+        new_buckets[i] = new_list();
     }
+
+    // loop over all possible hash values
+    for (uint64_t i = 0; i < cache->num_buckets; i++) {
+        hash_bucket *dbll = cache->buckets[i];
+        key_type *keys = ll_get_keys(dbll);
+        uint32_t num_keys = ll_size(dbll);
+        for (uint32_t j = 0; j < num_keys; j++) {
+            uint32_t val_size;
+            val_type val = ll_search(dbll, keys[j], &val_size);
+
+            // insert key, val, val_size into dbll in new memory
+            uint64_t new_hash = cache->hash(keys[j]) % new_num_buckets;
+            hash_bucket *e = new_buckets[new_hash];
+            ll_insert(e, keys[j], val, val_size);
+            free((void *)val);
+        }
+        free(keys);
+        destroy_list(cache->buckets[i]);
+    }
+    cache->num_buckets = new_num_buckets;
+    free(cache->buckets);
+    cache->buckets = new_buckets;
+    
 }
 
 cache_t create_cache(uint64_t maxmem)
 {
-    cache_t c = (cache_obj *)calloc(1, sizeof(struct cache_obj));
+    cache_t c = (cache_obj *) calloc(1, sizeof(struct cache_obj));
 
     c->memused = 0;
     c->maxmem = maxmem;
@@ -182,21 +183,24 @@ cache_t create_cache(uint64_t maxmem)
     }
 
     c->hash = modified_jenkins;
-    c->evict = evict_create(c->num_buckets);
+    //c->evict = evict_create(c->num_buckets);
+    c->evict_obj = new EvictObject;
     return c;
 }
 
 void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
 {
+    debug("cache_set");
+    uint64_t hash = cache_hash(cache, key);
+    hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
     {
         Mutex::ScopedLock lock(cache_mutex);
         {
+            debug("cache_set has lock");
             if (val_size == 0) {
                 return;
             }
 
-            uint64_t hash = cache_hash(cache, key);
-            hash_bucket *e = cache->buckets[hash]; // bucket the key belongs to
 
             // TODO check this block
             // check if the key exists in the cache already
@@ -205,13 +209,16 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
             if (res) {
                 // notify evict that key has been touched.
                 // move to rear of LRU
-                evict_get(cache->evict, key); 
+                //evict_get(cache->evict, key); 
+                cache->evict_obj->get(key);
+
                 uint32_t old_val_size = ll_remove_key(e, key);
                 assert(old_val_size == search_val_size);
                 ll_insert(e, key, val, val_size); // insert into double linked list
 
                 cache->memused -= old_val_size;
                 cache->memused += val_size;
+                debug("leaving cache_set early");
                 return;
             }
 
@@ -219,44 +226,50 @@ void cache_set(cache_t cache, key_type key, val_type val, uint32_t val_size)
             if (val_size > cache->maxmem){
                 printf("Could not store that value. Sorry!\n");
                 printf("cache->maxmem: %" PRIu64 "; val_size: %d\n", cache->maxmem, val_size);
+                debug("leaving cache_set early");
                 return;
             }
 
             // eviction, if necessary
             while (cache->memused + val_size > cache->maxmem) {
-                key_type k = evict_select_for_removal(cache->evict);
+                //key_type k = evict_select_for_removal(cache->evict);
+                key_type k = cache->evict_obj->select_for_removal();
                 assert(k && "if k is null, then our evict is empty and we shouldn't be removing anything");
                 cache_unsafe_delete(cache, k);
             }
 
             // insert <key,value> normally into cache
             ll_insert(e, key, val, val_size); // insert into double linked list
-            evict_set(cache->evict, key); // notify evict object that key was inserted
+            //evict_set(cache->evict, key); // notify evict object that key was inserted
             cache->memused += val_size;
             ++cache->num_elements;
 
-            cache_dynamic_resize(cache); // will resize cache if load factor is exceeded
+            // check for cache_dynamic_resize
+            float load_factor = (float)cache->num_elements / (float)cache->num_buckets;
+            if (load_factor > MAX_LOAD_FACTOR) {
+                cache_dynamic_resize(cache); 
+            }
         }
     }
+    cache->evict_obj->set(key);
+    debug("leaving cache_set");
 }
 
 val_type cache_get(cache_t cache, key_type key, uint32_t *val_size)
 {
+    void* res;
     {
         Mutex::ScopedLock lock(cache_mutex);
-        {
-            uint64_t hash = cache_hash(cache, key);
-            hash_bucket *e = cache->buckets[hash];
-            void *res = (void *) ll_search(e, key, val_size);
-
-            if(res != NULL){
-
-                evict_get(cache->evict, key);
-
-            }
-            return res;
-        }
+        uint64_t hash = cache_hash(cache, key);
+        hash_bucket *e = cache->buckets[hash];
+        res = (void *) ll_search(e, key, val_size);
+        //evict_get(cache->evict, key);
     }
+
+    if (res) {
+        cache->evict_obj->get(key);
+    }
+    return res;
 }
 
 uint64_t cache_space_used(cache_t cache)
@@ -273,8 +286,9 @@ void destroy_cache(cache_t cache)
                 destroy_list(cache->buckets[i]);
             }
 
-            evict_destroy(cache->evict);
-            free(cache->evict);
+            //evict_destroy(cache->evict);
+            //free(cache->evict);
+            delete cache->evict_obj;
             free(cache->buckets);
             cache->evict = NULL;
             cache->buckets = NULL;
