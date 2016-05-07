@@ -1,3 +1,4 @@
+
 import socket
 import sys
 import json
@@ -19,8 +20,7 @@ UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 data_filename = "workload_data.tsv"
 
-#global costants for testing the cache at various "rates" (really just sleep times)
-#note: will often stall after ~750 req/sec on @ifjorissen's setup
+#global costants for testing the cache at various "rates" 
 RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
 SUSTAINED_FOR = 15
 
@@ -37,7 +37,7 @@ tcp_responses = Queue()
 
 #globals for cache set-up
 TIMEOUT = .025 #25 ms; any request taking longer than this will be counted as "lost"
-MAX_PAIRS = 50
+MAX_PAIRS = 250
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
 WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
 KEYS = []
@@ -48,7 +48,7 @@ def get_time():
 
 def tcp_delete(sess, key):
     '''
-    given a key, send a PUT request. if no key is supplied, use default
+    given a key, and a session send a PUT request. if no key is supplied, use default
     '''
     global tcp_responses
     try:
@@ -194,7 +194,7 @@ def analyze_data(rate, filename):
     analyzes data and writes to file
     """
     global sent_req_get, recv_res_get, sent_times_get, recv_times_get, tcp_responses
-
+    time.sleep(5)
     # Prepare data from requests sent via tcp
     puts = 0
     deletes = 0
@@ -203,16 +203,16 @@ def analyze_data(rate, filename):
     put_tot_elapsed = 0
     del_tot_elapsed = 0
 
-    time = get_time()
-    next_time = time + 1
+    now_time = get_time()
+    next_time = now_time + 1
     print("ok, analyzing the data for reals...")
 
     while not tcp_responses.empty():
-        if time > next_time:
+        if now_time > next_time:
             left = tcp_responses.qsize()
             print("...responses left to process: {}".format(left))
-            next_time = time + 2
-        time = get_time()
+            next_time = now_time + 2
+        now_time = get_time()
         try:
             fut_res = tcp_responses.get()
             resp = fut_res.result()
@@ -276,7 +276,7 @@ def analyze_data(rate, filename):
     mean_time = (mean_get*(sent_req_get/sent_req) + mean_delete*(deletes/sent_req) + mean_put*(puts/sent_req))
 
     with open(filename, 'a') as f:
-        f.write("{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:6d}\n".format(rate, mean_time, sent_req, sent_req-lost,\
+        f.write("{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:6d}\n".format(rate, mean_time, sent_req, sent_req-lost,\
                 mean_get, sent_req_get, recv_res_get, mean_put, puts,\
                 puts-lost_put, mean_delete, deletes, deletes-lost_delete, lost))
     print("\n\tTOT (sent): {:6d}\t TOT (recv): {:6d}\t mean TOT(s): {:.6f}\t lost: {}".format(sent_req, sent_req-lost, mean_time, lost))
@@ -298,9 +298,9 @@ def task_master():
     filename = "data/workload_data{}.csv".format(nowish)
 
     with open(filename, 'a') as f:
-        f.write("\n#rate(req/sec)\t mean(sec)\t total_sent\t total_recieved\t get_mean(sec)\t \
-                get_sent\t get_received\t put_mean(sec)\t put_sent\t put_received\t \
-                delete_mean(sec)\t delete_sent\t delete_received\t lost\n")
+        f.write("\n#rate(req/sec),\t mean(sec),\t total_sent,\t total_recieved,\t get_mean(sec),\t \
+                get_sent,\t get_received,\t put_mean(sec),\t put_sent,\t put_received,\t \
+                delete_mean(sec),\t delete_sent,\t delete_received,\t lost\n")
 
     for i, rate in enumerate(RATES):
         #reset global variables
@@ -337,7 +337,7 @@ def task_master():
             analyze_data(rate, filename)
             shutdown_cache()
             #sleep for some time so the server can catch up
-            sleep_time = 8
+            sleep_time = 3
             time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
@@ -347,9 +347,5 @@ def task_master():
     sys.exit()
 
 
-
-
-
 if __name__ == '__main__':
     task_master()
-
