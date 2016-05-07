@@ -24,3 +24,4 @@ namespace globals
 void print_vector_string(std::vector<std::string> v);
 
 std::vector<std::string> string_split(const std::string &text, char sep);
+uint64_t my_get_time();

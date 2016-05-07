@@ -13,7 +13,7 @@ namespace globals
     const char *HOST = "127.0.0.1";
     const bool USE_UDP = true;
     const bool IS_PYTHON_CLIENT = true;
-    const bool DEBUG_ON = true;
+    const bool DEBUG_ON = false;
     const uint32_t DEFAULT_MAXMEM = 100000;
     const uint32_t NUM_UDP_THREADS = 4;
 }
@@ -23,7 +23,6 @@ void debug(const std::string& s) {
         std::cout << s << std::endl;
     }
 }
-
 
 void print_vector_string(std::vector<std::string> v) {
     std::cout << "Printing vector string" << std::endl;
@@ -40,4 +39,10 @@ std::vector<std::string> string_split(const std::string &text, char sep) {
     }
     tokens.push_back(text.substr(start));
     return tokens;
+}
+
+uint64_t my_get_time() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1000000000 * ts.tv_sec + ts.tv_nsec;
 }

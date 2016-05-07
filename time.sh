@@ -1,33 +1,14 @@
-ITERS=10
-tgt_diff=1000000000 # in nanoseconds
-sum=0
+ITERS=5
 
 curl -X PUT http://localhost:8080/alex/ledger
+echo ""
 
-# Time UDP
-ts=$(date +%s%N); 
 for i in `seq 1 $ITERS`;
 do
-    # not quite right
-    start_time=$(date +%s%N); 
-    echo -n "alex" | nc -4u -w0  localhost 8081
-    time_taken=$(($(date +%s%N) - start_time))
-    sum=$((sum + time_taken))
-
-    # this seems wrong
-    sleep_time=$((tgt_diff - time_taken))
-    echo $sleep_time
-    if [ "$sleep_time" -gt "0" ]
-    then
-        sleep_time=$(echo "scale=4; $sleep_time / 1000000000" | bc)
-        sleep $sleep_time
-        echo $sleep_time
-    fi
-
+    #echo -n "alex" | nc -4u -w0.1  localhost 8081
+    echo -n "alex" | nc -4u -w1  localhost 8081
+    echo ""
 done
-avg_time=$(echo "scale=4; $sum / $ITERS" | bc)
-echo "UDP Time ta+ diffken: $sum";
-echo "UDP Mean Time taken: $avg_time"
 
 # Time TCP
 #ts=$(date +%s%N); 

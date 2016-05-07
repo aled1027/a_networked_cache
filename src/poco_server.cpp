@@ -26,6 +26,7 @@
 #include <assert.h>
 #include "globals.h"
 #include "cache.h"
+#include "getRealTime.h"
 
 #include "poco_server.h"
 
@@ -91,16 +92,18 @@ class MyUDPServer : public Poco::Task {
                 // go to beginning of loop
                 Poco::Net::SocketAddress sender;
                 int n = 0;
+                uint64_t t1 = 0, t2 = 0;
                 try {
+                    t2 = t1 = my_get_time();
                     n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
                     buffer[n] = '\0';
+                    std::cout << "receiveFromBufferTime: " << my_get_time() - t1 << std::endl;
+                    t1 = my_get_time();
 
-                    std::ostringstream debug_recv;
-                    debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
-                    debug(debug_recv.str());
+                    //std::ostringstream debug_recv;
+                    //debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
+                    //debug(debug_recv.str());
                     ++num_requests;
-
-                    // std::cout << "<" << buffer << ">" << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
                 }
@@ -110,6 +113,8 @@ class MyUDPServer : public Poco::Task {
                 val_type val;
                 uint32_t val_size;
 
+                std::cout << "other receive time: " << my_get_time() - t1 << std::endl;
+                t1 = my_get_time();
                 //if we are using CPP Client, get key from path
                 if (!globals::IS_PYTHON_CLIENT) {
                     std::string decoded_uri;
@@ -125,9 +130,14 @@ class MyUDPServer : public Poco::Task {
                     std::string str_buffer(buffer);
                     key = (key_type) strdup(str_buffer.c_str());
                 }
+                std::cout << "parse time: " << my_get_time() - t1 << std::endl;
+                t1 = my_get_time();
 
                 // Resume normal track
                 val = cache_get(cache, key, &val_size);
+                std::cout << "queried cache: " << my_get_time() - t1<< std::endl;
+                t1 = my_get_time();
+
                 std::ostringstream db;
                 db << "{\"key\": \"" << key << "\", \"value\": \"" << val << "\"}";
                 debug(db.str());
@@ -144,7 +154,7 @@ class MyUDPServer : public Poco::Task {
                 } else {
                     // otherwise key is in cache
                     // convert val_type (i.e void*) into a char*
-                    debug("successful get");
+                    //debug("successful get");
 
                     char new_val[val_size + 1];
                     memcpy(new_val, val, val_size);
@@ -154,10 +164,13 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream oss2;
                     oss2 << "{\"key\": \"" << key << "\", \"value\": \"" << new_val << "\"}";
                     std::string msg = oss2.str();
-                    std::ostringstream debug_get;
-                    debug_get << "returning: " << msg;
-                    debug(debug_get.str());
+                    //std::ostringstream debug_get;
+                    //debug_get << "returning: " << msg;
+                    //debug(debug_get.str());
                     dgs.sendTo(msg.data(), msg.size(), sender);
+                    std::cout << "sent reponse: " << my_get_time() - t1 << std::endl;
+                    std::cout << "total: " << my_get_time() - t2 << std::endl;
+                    std::cout << std::endl;
                 }
                 debug("got to the end!");
                 free((char*) key);
