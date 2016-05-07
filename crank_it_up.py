@@ -1,0 +1,350 @@
+import socket
+import sys
+import json
+import time
+import string
+import datetime
+import time
+import random
+from threading import Thread, Event, Timer
+import requests as req
+from requests_futures.sessions import FuturesSession
+#from queue import Queue
+from Queue import Queue
+import numpy as np
+
+#global constants for connecting to remote server
+HOST = '127.0.0.1'
+TCP_PORT = '8080'
+UDP_PORT = '8081'
+TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
+SUSTAINED_FOR = 15
+
+#global variables for keeping track of get requests and responses
+sent_req_get = 0
+recv_res_get = 0
+sent_times_get = []
+recv_times_get = []
+elapsed = datetime.timedelta()
+tcp_responses = Queue()
+
+#globals for cache set-up
+TIMEOUT = .02 #20 ms; any request taking longer than this will be counted as "lost"
+MAX_PAIRS = 1
+WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete, update
+#WORKLOAD_CHOICE_PROB = [.7, .0, .3]
+WORKLOAD_CHOICE_PROB = [1., .0, .0]
+KEYS = []
+VALUES = []
+
+def get_time():
+    return time.time()
+
+def tcp_delete(sess, key):
+    '''
+    given a key, send a PUT request. if no key is supplied, use default
+    '''
+    global tcp_responses
+    try:
+        get_string = TCP_BASE + '/' + key
+        resp = sess.delete(get_string)
+        tcp_responses.put_nowait(resp)
+
+        return key
+    except Exception as e:
+        print("tcp_delete::uhoh: {}".format(e))
+
+def tcp_update(sess, key='ab', value='abc'):
+    '''
+    given a key and a value, send a PUT request. if no key or value is supplied, use default
+    '''
+    global tcp_responses
+    try:
+        get_string = TCP_BASE + '/' + key + '/' + value
+        resp = sess.put(get_string)
+        tcp_responses.put_nowait(resp)
+
+        # print("tcp:: post")
+        return key, value
+    except Exception as e:
+        print("tcp_update::uhoh: {}".format(e))
+
+def udp_get(sock):
+    '''
+    given a socket and  key, get the response for that key to the socket address
+    '''
+    global recv_res_get, recv_times_get
+    try:
+        recv_data = sock.recvfrom(1024)
+
+        recv_times_get.append(get_time())
+        recv_res_get += 1
+
+        reply = recv_data[0]
+        addr = recv_data[1]
+        ret_dict = json.loads(reply.decode("utf-8"))
+        print(ret_dict)
+        return ret_dict
+    except OSError:
+        return None
+    except:
+        #print("udp_get::Unexpected error:", sys.exc_info()[0])
+        return None
+
+def udp_send(sock, key):
+    '''
+    given a socket and  key, send a get request for that key to the socket address
+    '''
+    global sent_req_get, sent_times_get
+    try:
+        sock.sendto(key.encode('utf-8'), (HOST, int(UDP_PORT)))
+        sent_times_get.append(get_time())
+        sent_req_get += 1
+        # print("udp::send")
+    except OSError:
+        print("udp::send we closed this socket")
+        return None
+    except:
+        return None
+
+def recv_workload(sock, x):
+    '''
+    allows us to continuously grab udp datagram responses
+    '''
+    start_time = get_time()
+    while get_time() - start_time < SUSTAINED_FOR:
+        udp_get(sock)
+
+def tcp_get(sess, key):
+    '''
+    given a key and a value, send a PUT request. if no key or value is supplied, use default
+    '''
+    global tcp_responses
+    try:
+        get_string = TCP_BASE + '/' + key
+        resp = sess.get(get_string)
+        tcp_responses.put_nowait(resp)
+        return key
+    except Exception as e:
+        print("tcp_update::uhoh: {}".format(e))
+
+
+def mixed_workload(sock, sess, rate):
+    '''
+    A mixed workload as defined by global WORKLOAD_CHOICE_PROP list
+    '''
+    print("\n********************************************")
+    print("sending messages at a rate of ~{} per second".format(rate))
+
+    rate_timedelta = 1.0 / rate
+    print("rate_timedelta = {}".format(rate_timedelta))
+    end_time = get_time() + SUSTAINED_FOR
+    i = 0
+    while get_time() < end_time:
+        i+=1
+
+        work_type = np.random.choice(WORKLOAD_CHOICE, 1, p=WORKLOAD_CHOICE_PROB)
+
+        key = random.choice(KEYS)
+        val = random.choice(VALUES)
+
+        udp_send(sock, key)
+
+        #if work_type == "GET":
+        #    tcp_get(sess, key)
+        #elif work_type == "DEL":
+        #    tcp_delete(sess, key)
+        #else:
+        #    tcp_update(sess, key, val)
+
+        #delay = get_time() - goal_end_time
+        #print(delay)
+        #if delay > 0.0001:
+        #    time.sleep(delay)
+    print("sent " , i)
+
+
+def generate_key_val(num=MAX_PAIRS):
+    '''
+    generates up to MAX_PAIRS key value pairs,
+    '''
+    global KEYS, VALUES
+    num_pairs = 0
+    while num_pairs < MAX_PAIRS:
+        key_size = 8
+        val_size = 16
+        key = ''.join(random.choice(string.ascii_letters) for i in range(key_size))
+        value = ''.join(random.choice(string.ascii_letters) for i in range(val_size))
+        yield key, value
+        KEYS.append(key)
+        VALUES.append(value)
+        num_pairs += 1
+
+def tcp_put(key, value):
+    '''
+    given a key and a value, send a PUT request. if no key or value is supplied, use default
+    '''
+    get_string = TCP_BASE + '/' + key + '/' + value
+    resp = req.put(get_string)
+    print("put", key, value)
+    return key, value
+
+def setup_cache():
+    '''
+    adds key,value pairs to the cache in anticipation of mixed_workload
+    '''
+    print("********************************************")
+    print("adding some key value pairs to the cache... slowly")
+    for key, value in generate_key_val(MAX_PAIRS):
+        tcp_put(key, value)
+        time.sleep(.01)
+        # print("adding", key, value)
+    print("...done pre-populating the cache")
+
+def shutdown_cache():
+    print("done, shutting down cache....")
+    print("********************************************\n")
+    resp = req.post(TCP_BASE + '/shutdown')
+    time.sleep(1) # give time for the server to setup
+
+def analyze_data(rate, filename):
+    """
+    analyzes data and writes to file
+    """
+    global sent_req_get, recv_res_get, sent_times_get, recv_times_get, tcp_responses
+
+    # Prepare data from requests sent via tcp
+    puts = 0
+    deletes = 0
+    lost_put = 0
+    lost_delete = 0
+    put_tot_elapsed = 0
+    del_tot_elapsed = 0
+
+    time = get_time()
+    next_time = time + 1
+
+    while not tcp_responses.empty():
+        if time > next_time:
+            left = tcp_responses.qsize()
+            print("responses left to process: {}".format(left))
+            next_time = time + 2
+        time = get_time()
+        fut_res = tcp_responses.get()
+        resp = fut_res.result()
+        elapsed = resp.elapsed.total_seconds()
+        method = resp.request.method
+        if method == 'DELETE':
+            deletes += 1
+            del_tot_elapsed += elapsed
+            if elapsed > TIMEOUT:
+                lost_delete += 1
+        elif method == 'PUT':
+            puts += 1
+            put_tot_elapsed += elapsed
+            if elapsed > TIMEOUT:
+                lost_put += 1
+        else:
+            print("what? not a request method we care about")
+
+    if puts:
+        try:
+            mean_put = put_tot_elapsed/puts
+        except ZeroDivisionError:
+            print("Ah! I guess we lost all the put packets!")
+            mean_put = 0.0
+    else:
+        mean_put = 0.0
+
+    if deletes:
+        try:
+            mean_delete = del_tot_elapsed/deletes
+        except ZeroDivisionError:
+            print("Ah! I guess we lost all the delete packets!")
+            mean_delete = 0.0
+    else:
+        mean_delete = 0.0
+    # end tcp work
+
+    #prepare data from requests sent via udp
+
+    get_times = [(e - s) for (s, e) in list(zip(sent_times_get, recv_times_get))]
+    lost_get = sent_req_get - recv_res_get
+
+    try:
+        mean_get = sum(get_times)/(sent_req_get - lost_get)
+    except ZeroDivisionError:
+        print("Ah! I guess we lost all the get packets!")
+        mean_get = 0.0
+    #end udp work
+
+    #total requests sent, requests lost, mean time (rough weighted avg)
+    sent_req = sent_req_get + puts + deletes
+    lost = lost_get + lost_put + lost_delete
+    mean_time = (mean_get*(sent_req_get/sent_req) + mean_delete*(deletes/sent_req) + mean_put*(puts/sent_req))
+
+    print("\n\tTOT (sent): {:6d}\t TOT (recv): {:6d}\t mean TOT(s): {:.6f}\t lost: {}".format(sent_req, sent_req-lost, mean_time, lost))
+    print("\tGET (sent): {:6d}\t GET (recv): {:6d}\t mean GET(s): {:.6f}\t lost: {}".format(sent_req_get, recv_res_get, mean_get, lost_get))
+    print("\tPUT (sent): {:6d}\t PUT (recv): {:6d}\t mean PUT(s): {:.6f}\t lost: {}".format(puts, puts-lost_put, mean_put, lost_put))
+    print("\tDEL (sent): {:6d}\t DEL (recv): {:6d}\t mean DEL(s): {:.6f}\t lost: {}".format(deletes, deletes-lost_delete, mean_delete, lost_delete))
+    # analyze_tcp()
+    print("lost {} responses, sleeping for a few seconds".format(lost))
+
+def task_master(rate=1000):
+    '''
+    goal: determine the mean response times for a given workload at a variety of rates which is sustained for SUSTAINED_FOR seconds
+    '''
+    global sent_req_get, recv_res_get, sent_times_get, recv_times_get
+
+    sent_req_get = 0
+    recv_res_get = 0
+    sent_times_get = []
+    recv_times_get = []
+    i = 0
+
+    try:
+        port_no = 8081
+        host_name = "127.0.0.1"
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((host_name, port_no))
+        print("\nclient datagram socket bound to: {}:{}".format(host_name, port_no))
+
+        sess = FuturesSession()
+        setup_cache()
+
+        task = Thread(target=mixed_workload, args=(sock, sess, rate))
+        task.start()
+
+        task_getter = Thread(target=recv_workload, args=(sock, 3))
+        task_getter.start()
+
+
+        print("HERE")
+        task.join()
+        print("HERE")
+        task_getter.join()
+        print("HERE")
+
+        sock.close()
+        shutdown_cache()
+
+        print("analyzing data")
+        #analyze_data(rate, filename)
+        left = tcp_responses.qsize()
+        print("TCP responses left: {}".format(left))
+        lost_get = sent_req_get - recv_res_get
+        print("Lost get reponses: {}".format(lost_get))
+
+        #sleep for some time so the server can catch up
+        time.sleep(5)
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
+
+    print("done")
+
+if __name__ == '__main__':
+    task_master(rate=1000000000)
+

@@ -1,3 +1,9 @@
+Current status: udp not receving correct value - only receiving key for some reason??
+
+- Medium term goal: get test.py to find saturation point.
+
+
+
 # Let's network
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
@@ -14,24 +20,6 @@ A networked look-aside cache that can be access asynchronously by multiple clien
     - a lot of cache misses
     - hash function called alot
 
-## Optimizing
-Using perf, evict_get uses most time of anything.
-Specifically the if statement. 
-My hypothesis: searching for memory of pointers.
-0.69%
-At 0.40%, evict_obj was pretty slow.
-
-Above all this stuff was thread locking functions.
-evict_delete at 0.37%
-modified_jenkins at 0.29%
-normal cache operations, like cache_get, cache_set, cache_delete were around 0.05%.
-MyRequestHandler::handleRequest 0.13%
-
-- rewrote cache with std::set.
-- put evict calls outside of cache_mutex locks, since they have their own lock.
-- moved modified_jenkins calls outside of scoped_lock, because it's threadsafe.
-- moved check for cache_dynamic_resize to function where it is being called - saves a function call.
-
 
 
    
@@ -45,6 +33,14 @@ MyRequestHandler::handleRequest 0.13%
 6. In one terminal, call `make run_server`
 7. In another terminal, call `make run_client`
 8. Watch it go
+
+## FAQ Checklist
+1. Do you have -Og? clang doesn't -Og.
+1. Are you compiling with boost?
+3. Is `globals::IS_PYTHON_CLIENT` set correctly?
+4. Is `globals::USE_UDP` set correctly?
+5. Are `globals::HOST` and the client-side host set correctly?
+6. Too many evictions? Check default `globals::MAXMEM`.
 
 ## How to run benchmarking script
 Currently, we have a python script, `performance_tests.py` which does the brunt of the heavy lifting for our benchmark tests. 
@@ -183,13 +179,33 @@ We note that for a workload of 100% GET requests, the mean response time begins 
 - I couldn't get a udp socket to go to `localhost:port/key`, only to `localhost:port` with a message.
 - should be a way to it, but wasn't working for me.
 
+# Crank It Up
+
+## Step 1
+Pass
+
+## Step 2
+Adapted script from previous homework; see `crank_it_up.py`.
+
+## Step 3
 
 
-## FAQ Checklist
-1. Do you have -Og? clang doesn't -Og.
-1. Are you compiling with boost?
-3. Is `globals::IS_PYTHON_CLIENT` set correctly?
-4. Is `globals::USE_UDP` set correctly?
-5. Are `globals::HOST` and the client-side host set correctly?
-6. Too many evictions? Check default `globals::MAXMEM`.
+Using perf, evict_get uses most time of anything.
+Specifically the if statement. 
+My hypothesis: searching for memory of pointers.
+0.69%
+At 0.40%, evict_obj was pretty slow.
+
+Above all this stuff was thread locking functions.
+evict_delete at 0.37%
+modified_jenkins at 0.29%
+normal cache operations, like cache_get, cache_set, cache_delete were around 0.05%.
+MyRequestHandler::handleRequest 0.13%
+
+- rewrote cache with std::set.
+- put evict calls outside of cache_mutex locks, since they have their own lock.
+- moved modified_jenkins calls outside of scoped_lock, because it's threadsafe.
+- moved check for cache_dynamic_resize to function where it is being called - saves a function call.
+
+
 
