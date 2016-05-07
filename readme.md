@@ -1,3 +1,9 @@
+Current status: udp not receving correct value - only receiving key for some reason??
+
+- Medium term goal: get test.py to find saturation point.
+
+
+
 # Let's network
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
@@ -14,26 +20,6 @@ A networked look-aside cache that can be access asynchronously by multiple clien
     - a lot of cache misses
     - hash function called alot
 
-## Optimizing
-Using perf, evict_get uses most time of anything.
-Specifically the if statement. 
-My hypothesis: searching for memory of pointers.
-0.69%
-At 0.40%, evict_obj was pretty slow.
-
-Above all this stuff was thread locking functions.
-evict_delete at 0.37%
-modified_jenkins at 0.29%
-normal cache operations, like cache_get, cache_set, cache_delete were around 0.05%.
-MyRequestHandler::handleRequest 0.13%
-
-- rewrote cache with std::set.
-- put evict calls outside of cache_mutex locks, since they have their own lock.
-- moved modified_jenkins calls outside of scoped_lock, because it's threadsafe.
-- moved check for cache_dynamic_resize to function where it is being called - saves a function call.
-
-
-
    
 
 ## Usage
@@ -45,6 +31,14 @@ MyRequestHandler::handleRequest 0.13%
 6. In one terminal, call `make run_server`
 7. In another terminal, call `make run_client`
 8. Watch it go
+
+## FAQ Checklist
+1. Do you have -Og? clang doesn't -Og.
+1. Are you compiling with boost?
+3. Is `globals::IS_PYTHON_CLIENT` set correctly?
+4. Is `globals::USE_UDP` set correctly?
+5. Are `globals::HOST` and the client-side host set correctly?
+6. Too many evictions? Check default `globals::MAXMEM`.
 
 ## How to run benchmarking script
 Currently, we have a python script, `performance_tests.py` which does the brunt of the heavy lifting for our benchmark tests. 
@@ -183,13 +177,60 @@ We note that for a workload of 100% GET requests, the mean response time begins 
 - I couldn't get a udp socket to go to `localhost:port/key`, only to `localhost:port` with a message.
 - should be a way to it, but wasn't working for me.
 
+# Crank It Up
 
+## Step 1
+Pass
 
-## FAQ Checklist
-1. Do you have -Og? clang doesn't -Og.
-1. Are you compiling with boost?
-3. Is `globals::IS_PYTHON_CLIENT` set correctly?
-4. Is `globals::USE_UDP` set correctly?
-5. Are `globals::HOST` and the client-side host set correctly?
-6. Too many evictions? Check default `globals::MAXMEM`.
+## Step 2
+Adapted script from previous homework; see `crank_it_up.py`.
+
+## Step 3
+I devoted much of my time in optimizing performance to seeing how time is spent in a single UDP request.
+To check this, I added statements in `poco_server.cpp:MyUDPServer::runTask()` to how long, in nanoseconds, it takes to complete various tasks.
+The udp operation, from receiving a message to sending a message off, ranges from taking between 0.15 and 0.4 ms, with a high variance in that window, but not exceeding it or dropping below it.
+Greater than 95% of the time is spent on the lines:
+```
+n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
+buffer[n] = '\0';
+```
+The docs do not say, but (with my naive understanding of networking) I expect that `dgs.receiveFrom` checks the UDP queue to see if there are packets waiting to be processed.
+If there are packets to be processed, then `receiveFrom` collects the data, stores it in buffer, and returns the size of the buffer.
+
+The time that we are really concerned about is the moment that the UDP packet enters the queue, to the time that the `receiveFrom` acquires the buffer.
+It is possible that `receiveFrom` sits at the queue for some amount of time waiting for a packet to arrive.
+If this is the case, then the time that `receiveFrom` takes does accurate not accurately reflect how `receiveFrom` contributes the time spent processing a client's request.
+
+We can, however, glean some information.
+According the our timings found with our python script, we know that an average UDP get request takes TODOxxx seconds.
+According to my print statements in `poco_server.cpp::MyUDPServer::runTask()`, all lines (including `cache_get`) except for `receiveFrom` take approximately 0.01 ms.
+The time suck is therefore either occuring in the function `dgs.receiveFrom` or somewhere in the networking or networking layer.
+We have reason to believe that unaccounted time is not occuring in the communication/networking because we are running these tests over localhost, which the operating system speeds up substantially.
+
+Based on this information, we felt that it was unwise to further improve our cache code, as our print statements suggest that it is not a major bottleneck; in fact, they suggest the opposite: the cache is quite fast.
+The print statements say that calling `cache_get` takes rougly 0.005 ms.
+I should not that all timings are measuring the performance of the cache on a single request, such that multithreading is not used, and there is no locking.
+We have some locks on our cache, so this time will be slower if the UDP server receives multiple requests at once.
+
+## Optimizations before timings
+Before we finished our timing script, I implemented some optimizations based on the output of our perf report.
+The perf report gave very flat timings - everything was less than 2% - which I now know means that I should have removed `-Og` or something else to make the report more accurate (I was using sudo).
+But I didn't do that.
+
+In the perf report, I observed that `evict_get` uses the most time of any `a_networked_cache` functions, and the other eviction functions took a disproportionate amount of time as well.
+For context, `evict_get` was taking 0.69% of the time.
+I zoomed in on `evict_get` and saw that most of the time, according to Perf, was spent on an if statement in the middle of a loop that checks if a pointer is NULL.
+We had a naive implementation of LRU, which I believe was causing many branch misses (Perf verified we had a lot of branch misses - unsure where), and our implementation required us to access many pointers that are in random places in memory in every operation.
+
+I decided to change our eviction policy to evict a random object in the cache.
+I implemented this using `std::set`.
+Essentially, we have a `std::set` of all objects in the cache, and we select an element at random from the set to evict.
+I ran Perf after this implementation, and all evict operations dropped to less than 0.08% of the time.
+
+I also observed that many of the functions at the top of the perf report were related to threading and locking.
+Since for homework 7 I threw locks on pretty naively, I decided to look through and see what could be changed.
+I put all calls to our hash function outside of locks (our hash function was relatively high on the Perf list).
+I put as many calls to the eviction policy outside of the cache locks since the eviction object has its own locks.
+Finally, our if-condition that checks if the cache needs to resized outside of the function `cache_dynamic_resize` and right into the function (inlined it, so to speak).
+Since `cache_dynamic_resize` is called so rarely, we save a function call - this change moved `cache_dynamic_resize` way down on the perf report.
 
