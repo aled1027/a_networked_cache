@@ -1,3 +1,4 @@
+
 import socket
 import sys
 import json
@@ -9,8 +10,7 @@ import random
 from threading import Thread, Event, Timer
 import requests as req
 from requests_futures.sessions import FuturesSession
-#from queue import Queue
-from Queue import Queue
+from queue import Queue
 import numpy as np
 
 #global constants for connecting to remote server
@@ -20,10 +20,8 @@ UDP_PORT = '8081'
 TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 data_filename = "workload_data.tsv"
 
-#global costants for testing the cache at various "rates" (really just sleep times)
-#note: will often stall after ~750 req/sec on @ifjorissen's setup
-#RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
-RATES = [1000]
+#global costants for testing the cache at various "rates" 
+RATES = [600, 650, 700, 750, 800, 850, 900, 950, 1000]
 SUSTAINED_FOR = 15
 
 #global variables for keeping track of get requests and responses
@@ -38,8 +36,8 @@ elapsed = datetime.timedelta()
 tcp_responses = Queue()
 
 #globals for cache set-up
-TIMEOUT = .02 #20 ms; any request taking longer than this will be counted as "lost"
-MAX_PAIRS = 100
+TIMEOUT = .025 #25 ms; any request taking longer than this will be counted as "lost"
+MAX_PAIRS = 250
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
 WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
 KEYS = []
@@ -50,12 +48,12 @@ def get_time():
 
 def tcp_delete(sess, key):
     '''
-    given a key, send a PUT request. if no key is supplied, use default
+    given a key, and a session send a PUT request. if no key is supplied, use default
     '''
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key
-        resp = sess.delete(get_string)
+        resp = sess.delete(get_string, timeout=TIMEOUT*200)
         tcp_responses.put_nowait(resp)
 
         return key
@@ -69,7 +67,7 @@ def tcp_update(sess, key='ab', value='abc'):
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key + '/' + value
-        resp = sess.put(get_string)
+        resp = sess.put(get_string, timeout=TIMEOUT*200)
         tcp_responses.put_nowait(resp)
 
         # print("tcp:: post")
@@ -196,7 +194,7 @@ def analyze_data(rate, filename):
     analyzes data and writes to file
     """
     global sent_req_get, recv_res_get, sent_times_get, recv_times_get, tcp_responses
-
+    time.sleep(5)
     # Prepare data from requests sent via tcp
     puts = 0
     deletes = 0
@@ -205,31 +203,37 @@ def analyze_data(rate, filename):
     put_tot_elapsed = 0
     del_tot_elapsed = 0
 
-    time = get_time()
-    next_time = time + 1
+    now_time = get_time()
+    next_time = now_time + 1
+    print("ok, analyzing the data for reals...")
 
     while not tcp_responses.empty():
-        if time > next_time:
+        if now_time > next_time:
             left = tcp_responses.qsize()
-            print("responses left to process: {}".format(left))
-            next_time = time + 2
-        time = get_time()
-        fut_res = tcp_responses.get()
-        resp = fut_res.result()
-        elapsed = resp.elapsed.total_seconds()
-        method = resp.request.method
-        if method == 'DELETE':
-            deletes += 1
-            del_tot_elapsed += elapsed
-            if elapsed > TIMEOUT:
-                lost_delete += 1
-        elif method == 'PUT':
-            puts += 1
-            put_tot_elapsed += elapsed
-            if elapsed > TIMEOUT:
-                lost_put += 1
-        else:
-            print("what? not a request method we care about")
+            print("...responses left to process: {}".format(left))
+            next_time = now_time + 2
+        now_time = get_time()
+        try:
+            fut_res = tcp_responses.get()
+            resp = fut_res.result()
+            elapsed = resp.elapsed.total_seconds()
+            method = resp.request.method
+            if method == 'DELETE':
+                deletes += 1
+                del_tot_elapsed += elapsed
+                if elapsed > TIMEOUT:
+                    lost_delete += 1
+            elif method == 'PUT':
+                puts += 1
+                put_tot_elapsed += elapsed
+                if elapsed > TIMEOUT:
+                    lost_put += 1
+            else:
+                print("what? not a request method we care about")
+        except ConnectionError as e:
+            print("oops: {}".format(e))
+        except req.exceptions.Timeout as e:
+            print("oops Timeout error: {}".format(e))
 
     if puts:
         try:
@@ -248,6 +252,8 @@ def analyze_data(rate, filename):
             mean_delete = 0.0
     else:
         mean_delete = 0.0
+
+    print("done with tcp analysis")
     # end tcp work
 
     #prepare data from requests sent via udp
@@ -260,15 +266,17 @@ def analyze_data(rate, filename):
     except ZeroDivisionError:
         print("Ah! I guess we lost all the get packets!")
         mean_get = 0.0
+
+    print("done with udp analysis")
     #end udp work
 
     #total requests sent, requests lost, mean time (rough weighted avg)
-    sent_req = sent_req_get + puts + deletes
+    sent_req = sent_req_get + puts + deletes 
     lost = lost_get + lost_put + lost_delete
     mean_time = (mean_get*(sent_req_get/sent_req) + mean_delete*(deletes/sent_req) + mean_put*(puts/sent_req))
 
     with open(filename, 'a') as f:
-        f.write("{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:.6f}\t{:6d}\t{:6d}\t{:6d}\n".format(rate, mean_time, sent_req, sent_req-lost,\
+        f.write("{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:.6f},\t{:6d},\t{:6d},\t{:6d}\n".format(rate, mean_time, sent_req, sent_req-lost,\
                 mean_get, sent_req_get, recv_res_get, mean_put, puts,\
                 puts-lost_put, mean_delete, deletes, deletes-lost_delete, lost))
     print("\n\tTOT (sent): {:6d}\t TOT (recv): {:6d}\t mean TOT(s): {:.6f}\t lost: {}".format(sent_req, sent_req-lost, mean_time, lost))
@@ -285,14 +293,14 @@ def task_master():
 
     global sent_req_get, recv_res_get, sent_times_get, recv_times_get
 
-    #create file name, open file, write header
+    #create file name, open file, write header 
     nowish = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
-    filename = "workload_data{}.tsv".format(nowish)
+    filename = "data/workload_data{}.csv".format(nowish)
 
     with open(filename, 'a') as f:
-        f.write("\n#rate(req/sec)\t mean(sec)\t total_sent\t total_recieved\t get_mean(sec)\t \
-                get_sent\t get_received\t put_mean(sec)\t put_sent\t put_received\t \
-                delete_mean(sec)\t delete_sent\t delete_received\t lost\n")
+        f.write("\n#rate(req/sec),\t mean(sec),\t total_sent,\t total_recieved,\t get_mean(sec),\t \
+                get_sent,\t get_received,\t put_mean(sec),\t put_sent,\t put_received,\t \
+                delete_mean(sec),\t delete_sent,\t delete_received,\t lost\n")
 
     for i, rate in enumerate(RATES):
         #reset global variables
@@ -303,7 +311,7 @@ def task_master():
         recv_times_get = []
 
         try:
-            port_no = 8082 + i
+            port_no = 8082 + i%10
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -319,30 +327,28 @@ def task_master():
             task.start()
             task_getter.start()
 
-            print("HERE")
             time.sleep(SUSTAINED_FOR)
-            print("HERE")
             task_stop.set()
-            print("HERE")
             sock.close()
-            print("HERE")
 
             task.join()
-            #task_getter.join() # doesn't work on Alex's computer
+            task_getter.join() # doesn't work on Alex's computer
 
-            print("ok, analyzing data")
             analyze_data(rate, filename)
             shutdown_cache()
             #sleep for some time so the server can catch up
-            sleep_time = 5
+            sleep_time = 3
             time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            raise
+            #raise
 
     print("done")
     sys.exit()
 
+
+
+
+
 if __name__ == '__main__':
     task_master()
-
