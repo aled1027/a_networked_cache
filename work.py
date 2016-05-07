@@ -21,7 +21,7 @@ TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 data_filename = "workload_data.tsv"
 
 #global costants for testing the cache at various "rates" 
-RATES = [600, 650, 700, 750, 800, 850, 900, 950, 1000]
+RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
 SUSTAINED_FOR = 15
 
 #global variables for keeping track of get requests and responses
@@ -30,8 +30,6 @@ recv_res_get = 0
 
 sent_times_get = []
 recv_times_get = []
-
-elapsed = datetime.timedelta()
 
 tcp_responses = Queue()
 
@@ -53,7 +51,7 @@ def tcp_delete(sess, key):
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key
-        resp = sess.delete(get_string, timeout=TIMEOUT*200)
+        resp = sess.delete(get_string, timeout=TIMEOUT*250)
         tcp_responses.put_nowait(resp)
 
         return key
@@ -67,7 +65,7 @@ def tcp_update(sess, key='ab', value='abc'):
     global tcp_responses
     try:
         get_string = TCP_BASE + '/' + key + '/' + value
-        resp = sess.put(get_string, timeout=TIMEOUT*200)
+        resp = sess.put(get_string, timeout=TIMEOUT*250)
         tcp_responses.put_nowait(resp)
 
         # print("tcp:: post")
@@ -187,7 +185,7 @@ def shutdown_cache():
     print("done, shutting down cache....")
     print("********************************************\n")
     resp = req.post(TCP_BASE + '/shutdown')
-    time.sleep(1) # give time for the server to setup
+    time.sleep(4) # give time for the server to setup
 
 def analyze_data(rate, filename):
     """
@@ -291,7 +289,7 @@ def task_master():
     goal: determine the mean response times for a given workload at a variety of rates which is sustained for SUSTAINED_FOR seconds
     '''
 
-    global sent_req_get, recv_res_get, sent_times_get, recv_times_get
+    global sent_req_get, recv_res_get, sent_times_get, recv_times_get, KEYS, VALUES
 
     #create file name, open file, write header 
     nowish = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
@@ -309,9 +307,11 @@ def task_master():
 
         sent_times_get = []
         recv_times_get = []
+        KEYS = []
+        VALUES = []
 
         try:
-            port_no = 8082 + i%10
+            port_no = 8082 + i
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -336,9 +336,6 @@ def task_master():
 
             analyze_data(rate, filename)
             shutdown_cache()
-            #sleep for some time so the server can catch up
-            sleep_time = 3
-            time.sleep(sleep_time)
         except:
             print("Unexpected error:", sys.exc_info()[0])
             #raise
