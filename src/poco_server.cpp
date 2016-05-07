@@ -78,9 +78,11 @@ class MyUDPServer : public Poco::Task {
             dgs.setReceiveTimeout(Poco::Timespan(0,0,0,0,5000));
 
             char buffer[2048];
+            int num_requests = 0;
             while (true) {
                 // if thread is cancelled from outside, return.
                 if (isCancelled()) {
+                    std::cout << "NUM UDP REQUESTS: " << num_requests << std::endl;
                     return;
                 }
 
@@ -96,6 +98,8 @@ class MyUDPServer : public Poco::Task {
                     std::ostringstream debug_recv;
                     debug_recv << "server::cache_get (udp) got: " << sender.toString() << ": " << buffer;
                     debug(debug_recv.str());
+                    ++num_requests;
+
                     // std::cout << "<" << buffer << ">" << std::endl;
                 } catch (Poco::Exception &e) {
                     continue;
@@ -167,25 +171,19 @@ void MyRequestHandler::handleRequest(HTTPServerRequest &req, HTTPServerResponse 
 {
     debug("got a request");
 
-    // lock
-    //{
-    //    Mutex::ScopedLock lock(globals::mutex);
-    //    {
-            if (req.getMethod() == "POST") {
-                post(req, resp);
-            } else if (req.getMethod() == "GET") {
-                get(req, resp);
-            } else if (req.getMethod() == "PUT") {
-                put(req, resp);
-            } else if (req.getMethod() == "DELETE") {
-                handle_delete(req, resp); // delete is a keyword in c++
-            } else if (req.getMethod() == "HEAD") {
-                head(req, resp); 
-            } else {
-                bad_request(req, resp);
-            }
-    //    }
-    //}
+    if (req.getMethod() == "POST") {
+        post(req, resp);
+    } else if (req.getMethod() == "GET") {
+        get(req, resp);
+    } else if (req.getMethod() == "PUT") {
+        put(req, resp);
+    } else if (req.getMethod() == "DELETE") {
+        handle_delete(req, resp); // delete is a keyword in c++
+    } else if (req.getMethod() == "HEAD") {
+        head(req, resp); 
+    } else {
+        bad_request(req, resp);
+    }
 }
 
 

@@ -97,6 +97,7 @@ val_type Client::cache_get(cache_t cache, const uint8_t* key) {
     std::string body;
     if (globals::USE_UDP) {
         debug("client::cache_get with udp");
+        std::cout << "port: " << cache->udp_port << std::endl;
 
         // create a socket addr to server, create dgs for our socket, update dgs timeout
         Poco::Net::SocketAddress server(cache->host, cache->udp_port);
