@@ -105,16 +105,36 @@ As a setup step, we randomly generate some (key, value) pairs and put them in th
 
 At first, the idea behind the experimental design was to create a thread which sent GET requests at a certain rate for a sustained amount of time (30 seconds). This was done by having two threads: one responsible for sending the request, grabbing a timestamp, and incrementing a global variable; and a second thread responsible for listening to responses to those requests and keeping track of the analgous data. 
 
-However, this presented a problem when we attempted to simulate the ETC workload from the memcached paper. Namely, we chose to use python requests library to help us send PUT, UPDATE, and DELETE requests to our cache. The python requests library is not asychronous, so it is proving to be quite difficult to send requests at a desired rate when the workload is varied. 
+However, this presented a problem when we attempted to simulate the ETC workload from the memcached paper. Namely, we chose to use python future-requests library to help us send PUT, UPDATE, and DELETE requests to our cache. future-requests is asynchronous, so we add requests to a queue and then when the timing period is over, we empty the queue, attempting to read the result from the future object. 
 
-To solve this we need to do (at least) two things:
-  * Figure our which library would best suit our needs and integrate it into `workload.py`
-  * Modify the relevant global variables so that they are either no longer global, or can only be modified after aquiring a lock. 
-
-In the meantime, we are using a Timer() object to allow us to send PUT, UPDATE, and DELETE requests in a way that's non-blocking. However, this does nothing to avoid the potential race conditions when it comes to updating global variables.
+A future request is considered to be *lost* if the request takes more than 25ms to complete; however, the requests do not time out until 6 seconds pass. This is because we can only figure out the type of response that timed out (or was lost) if we can wait for the task itself to complete. Note that we count the elapsed time of the "lost" requests in our cache, so our mean put / delete requests is higher due to that decision. 
 
 ## 9. Analyze and interpret data
-asdf
+
+Since the TCP portion of our server is already mulithreaded, we also looked at the difference resulting from having multiple threads on the UDP portion. 
+
+We sent requests to the server at varying rates between 50 and 1000 requests per second. We sustained these rates for 15 seconds, at which point we looked at the the number of each type of request, mean times for each type of request, and number of packets lost. The raw data can be found in `data/`. 
+
+Interpreting the graph: the red marked line shows the mean GET response time for a given rate (listed on the x-axis). The blue marked line is the average mean reponse time across all types of requests (GET, PUT, DELETE). The green marked line indicated the mean response time for PUT requests, and the teal line is the mean elapsed time for a DELETE request. 
+
+Singly threaded UDP:
+![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_1UDP.png "Singly threaded UDP")
+
+This chart suggests that the mean GET response time exceeds 1ms when we reach approximately 500 requests per second. 
+
+UDP with two:
+![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_2UDP.png "2 threaded UDP")
+
+
+UDP with 4 threads:
+![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_4UDP.png "4 threaded UDP")
+
+
+UDP with 8 threads:
+![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_8UDP.png "8 threaded UDP")
+
+[finish this!]
+
 
 ## 10. Present results
 Due to the issues outlined in section 8 (Design experiment), a workload is currently composed entirely of get requests. The issue with the workload is compounded by the fact that our cache is not currently thread-safe, though it does use multiple threads. When we attempt to simulate a mixed workload on our cache, the server will often encounter a memory allocation or freeing error, which is fatal and prevents data from being collected on the client-side.
