@@ -182,7 +182,7 @@ The function `cache_unsafe_delete` is only called from `cache_set`, is not acces
 # Crank It Up 
 
 ## Step 1
-Isabella's analysis here.
+The elapsed time for a single get request before optimization was below 1ms. 
 
 ## Step 2
 Isabella's analysis here.
