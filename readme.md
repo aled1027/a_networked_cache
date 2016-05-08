@@ -1,8 +1,6 @@
 # Let's network
 A networked look-aside cache that can be access asynchronously by multiple clients.
 
-- sudo perf record ./asdf server
-- sudo perf report
 
 ## Usage
 1. Install cmake
@@ -100,7 +98,6 @@ If a cache is being used correctly, then there shouldn't be too many large value
 This is an arguable experimental design decision.
 
 ## 8. Design experiment
-Used mutilate for distributions:  [https://github.com/leverich/mutilate](https://github.com/leverich/mutilate)
 As a setup step, we randomly generate some (key, value) pairs and put them in the cache. When sending a request, we randomly choose a key and a value (not necessarily the same pair) and pass that information to the correct request type we are attempting to make. Note that the only request type which requires a value is the UPDATE (put) request type, since we wish to replace the value. 
 
 At first, the idea behind the experimental design was to create a thread which sent GET requests at a certain rate for a sustained amount of time (30 seconds). This was done by having two threads: one responsible for sending the request, grabbing a timestamp, and incrementing a global variable; and a second thread responsible for listening to responses to those requests and keeping track of the analgous data. 
@@ -139,12 +136,13 @@ UDP with 8 threads:
 ## 10. Present results
 Due to the issues outlined in section 8 (Design experiment), a workload is currently composed entirely of get requests. The issue with the workload is compounded by the fact that our cache is not currently thread-safe, though it does use multiple threads. When we attempt to simulate a mixed workload on our cache, the server will often encounter a memory allocation or freeing error, which is fatal and prevents data from being collected on the client-side.
 
-We note that for a workload of 100% GET requests, the mean response time begins to exceed 1ms at approximately 3000requests per second. Past this point, we notice a dramatically increased response time (an order of magnitude increase between 3000req/sec and 3250 req/sec) and a marked increase in packet loss. At a rate of 10000req/sec, we see that the mean response time is (WHAT???? thoughts, alex?) and we've received under 50% of our expected responses.
+We note that for a workload of 100% GET requests, the mean response time begins to exceed 1ms at approximately 3000 requests per second. Past this point, we notice a dramatically increased response time (an order of magnitude increase between 3000req/sec and 3250 req/sec) and a marked increase in packet loss.
 
 ## Misc notes
-- Added a bit of crap to `poco_server.cpp` to `MyUDPServer::runTask` to allow python sockets to work.
+- Added a bit of crap to `poco_server.cpp` to `MyUDPServer::runTask` to get python sockets to work.
 - I couldn't get a udp socket to go to `localhost:port/key`, only to `localhost:port` with a message.
-- should be a way to it, but wasn't working for me.
+- should be a way to do it, but wasn't working for me.
+- same as `echo -n "key" | nc -4u -w1 localhost 8081`
 
 # Multicache
 
@@ -156,13 +154,13 @@ waiting; however, I observe that it generally only uses a single thread since mo
 I did not check to see at what threshold the TCP server jumps to a second or third thread.
 For more information on Poco's TCP server multithreading, see the Poco docs on TCPServer.
 
-Our UDP server, which we wrote using Poco's datagram socket, is not automatically multithreaded.  
+Our UDP server, which we wrote using Poco's datagram socket, is not automatically multithreaded. 
 We multithread our UDP server by opening up many UDP servers on multiple threads using Poco's task manager.
 Task manager takes as input a unique pointer (I think, or something like it), and it runs and manages the thread.
 Task manager has the nice feature where we can easily kill the threads when we decide to shutdown the server.
 The UDP multithreading code can be found at `src/poco_server.cpp::Server::start()`.
 
-The number of UDP threads is variable - the value is set in `globals.cpp` - but I usually have it set to use 4 threads.
+The number of UDP threads is variable - the value is set in `globals.cpp`. See HW6 for how the number of UDP threads affects performance.
 
 ## Locking
 We used Poco's `FastMutex::mutex` and `FastMutex::ScopedLock` to provide locking functionality.
@@ -188,37 +186,40 @@ The elapsed time for a single get request before optimization was below 1ms.
 Isabella's analysis here.
 
 ## Step 3
-I devoted much of my time in optimizing performance to seeing how time is spent in a single get request.
-My thinking was that if we can optimize the performance of a single UDP get request, then our server can handle more.
-It was also easier to check, since I could send requests to the server using curl and netcat.
+I devoted some time in optimizing performance to seeing how time is spent in a single get request.
+My thinking was that if we can optimize the performance of a single UDP get request, then our server can handle more requests per second.
+It was also easier to check the performance of a single request: I could send the request with curl or netcat and add statements that print timings to the c++ code. 
 
-To this end, I added statements in `poco_server.cpp:MyUDPServer::runTask()` to measure the time, in nanoseconds, it takes to complete various tasks.
+To this end, I added statements in `poco_server.cpp:MyUDPServer::runTask()` to measure the time, in nanoseconds, it takes to complete each step in processing a UDP request.
 According to the print statements on the server side, a UDP get request, from receiving a message to sending a message off, ranges from taking between 0.15 and 0.4 ms, with a high variance in that window, but not exceeding it or dropping below it.
 Greater than 95% of the time is spent on the lines:
 ```
 n = dgs.receiveFrom(buffer, sizeof(buffer)-1, sender);
 buffer[n] = '\0';
 ```
-The Poco docs do not say, but (with my naive understanding of networking) I expect that `dgs.receiveFrom` checks the UDP queue to see if there are packets waiting to be processed.
-If there are packets to be processed, then `receiveFrom` collects the data, stores it in buffer, and returns the size of the buffer.
+The Poco docs do not say, but (with my naive understanding of networking) I expect that `dgs.receiveFrom` checks the UDP queue held by the OS to see if there are packets waiting to be processed.
+If there are packets to be processed, then `dgs.receiveFrom` collects the data, stores it in buffer, and returns the size of the buffer.
 
-The time that we are really concerned about is the moment that the UDP packet enters the queue, to the time that the `receiveFrom` acquires the buffer.
-It is possible that `receiveFrom` sits at the queue for some amount of time waiting for a packet to arrive.
-If this is the case, then the time that `receiveFrom` takes does accurate not accurately reflect how `receiveFrom` contributes the time spent processing a client's request.
+The time that we are really concerned about is the moment that the UDP packet enters the queue, to the time that `dgs.receiveFrom` returns.
+It is possible that `dgs.receiveFrom` sits at the queue for some amount of time waiting for a packet to arrive.
+If this is the case, then the time that `dgs.receiveFrom` takes does accurate not accurately reflect how `dgs.receiveFrom` contributes the time spent processing a client's request.
 
 We can, however, glean some information.
-According the our timings found with our python script, we know that an average UDP get request takes TODOxxx seconds.
-According to my print statements in `poco_server.cpp::MyUDPServer::runTask()`, all lines (including `cache_get`) except for `receiveFrom` take approximately 0.01 ms.
+According the our timings found with our python script, we know that an average UDP get request takes around 0.25 ms (on Isabella's computer, longer on mine - closer to 0.35ish ms). 
+According to my print statements in `poco_server.cpp::MyUDPServer::runTask()`, all lines (including `cache_get`) except for `dgs.receiveFrom` take approximately 0.01 ms.
 The time suck is therefore either occuring in the function `dgs.receiveFrom` or somewhere in the networking or networking layer.
-We have reason to believe that unaccounted time is not occuring in the communication/networking because we are running these tests over localhost, which the operating system speeds up substantially.
+The unaccounted time could be occuring in the communication/networking, but because we are running these tests over localhost, the networking time is minimal.
 
 Based on this information, we felt that it was unwise to further improve our cache code, as our print statements suggest that it is not a major bottleneck; in fact, they suggest the opposite: the cache is quite fast.
 The print statements say that calling `cache_get` takes rougly 0.005 ms.
-I should not that all timings are measuring the performance of the cache on a single request, such that multithreading is not used, and there is no locking.
+I should note that all timings are measuring the performance of the cache on a single request and I am running the server with a single UDP thread, such that multithreading is not used, and there is no locking.
 We have some locks on our cache, so this time will be slower if the UDP server receives multiple requests at once.
 
+Future work on this project would include investigating Poco's datagram implementation; in particular, timing it in isolation to see its performance. 
+Poco might be fast, and something else is being slow around `dgs.receiveFrom`, or Poco is slow, and we either use a different library for UDP or write our own. 
+
 ## Optimizations before timings
-Before we finished our timing script, I implemented some optimizations based on the output of our perf report.
+Before we finished our timing script, and before I did the analysis in the previous subsection, I implemented some optimizations based on the output of our perf report.
 The perf report gave very flat timings - everything was less than 2% - which I now know means that I should have removed `-Og` or something else to make the report more accurate (I was using sudo).
 But I didn't do those things because I didn't know at the time.
 
@@ -239,3 +240,7 @@ I put as many calls to the eviction policy outside of the cache locks since the 
 Finally, our if-condition that checks if the cache needs to resized outside of the function `cache_dynamic_resize` and right into the function (inlined it, so to speak).
 Since `cache_dynamic_resize` is called so rarely, we save a function call - this change moved `cache_dynamic_resize` way down on the perf report.
 
+## Misc Notes on HW8
+- To use perf:
+  - sudo perf record ./asdf server
+  - sudo perf report
