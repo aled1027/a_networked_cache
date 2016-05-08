@@ -237,8 +237,8 @@ I also observed that many of the functions at the top of the perf report were re
 Since for homework 7 I threw locks on pretty naively, I decided to look through and see what could be changed.
 I put all calls to our hash function outside of locks (our hash function was relatively high on the Perf list).
 I put as many calls to the eviction policy outside of the cache locks since the eviction object has its own locks.
-Finally, our if-condition that checks if the cache needs to resized outside of the function `cache_dynamic_resize` and right into the function (inlined it, so to speak).
-Since `cache_dynamic_resize` is called so rarely, we save a function call - this change moved `cache_dynamic_resize` way down on the perf report.
+Finally, I moved the if-condition that checks if the cache needs to be resized outside of the function `cache_dynamic_resize` and right into the function (inlined it, so to speak).
+Since `cache_dynamic_resize` is checked often by *used* rarely, we save a function call - this change moved `cache_dynamic_resize` way down on the perf report.
 
 ## Misc Notes on HW8
 - To use perf:
