@@ -128,10 +128,9 @@ UDP with 4 threads:
 
 
 UDP with 8 threads:
-![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_8UDP.png "8 threaded UDP")
+![singly threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/pre_optimize_8UDPpng.png "8 threaded UDP")
 
-[finish this!]
-
+At this time, it seems that there is a saturation point of ~450 requests per second, (largely) regardless of the number of threads we are using. 
 
 ## 10. Present results
 Due to the issues outlined in section 8 (Design experiment), a workload is currently composed entirely of get requests. The issue with the workload is compounded by the fact that our cache is not currently thread-safe, though it does use multiple threads. When we attempt to simulate a mixed workload on our cache, the server will often encounter a memory allocation or freeing error, which is fatal and prevents data from being collected on the client-side.
@@ -183,7 +182,42 @@ The function `cache_unsafe_delete` is only called from `cache_set`, is not acces
 The elapsed time for a single get request before optimization was below 1ms. 
 
 ## Step 2
-Isabella's analysis here.
+
+*Background*
+`work.py` does the heavy lifiting for the bulk of this assignment. We create a workload that is 70% GET requests and 30% PUT requests. The key length is always 8 bytes and the value length is always 16 bytes. We initialize the cache with 250 items, and we generate a new key-value pair for every put request. So, the only time a GET request would result in a cache miss would be if the key was evicted. 
+
+`work.py` starts the server by creating a subprocess that runs the `make run_server` command. Then, it opens up a raw socket to send and recieve GET requests over the UDP server; a separate thread monitors the incoming GET responses. The PUT/UPDATE requests use the python library requests-futures, which allows us to send non-blocking (on the client side) requests to the TCP server. Each request to the TCP server returns a Future object, which we add to a queue (tcp_responses) and handle after all of the requests have been sent. 
+
+We begin sending requests at a rate of approximaitely 50 req/sec, and we increase that rate by 100req/sec until we reach a rate of 1950 req/sec. We sustain each of these rates for 30 seconds. After this time, we (attempt to) get the result of the TCP requests, tallying up the request method and keeping track of elapsed time. 
+
+*Results*
+On the pre-optimized branch (master), it was, at times, difficult to collect data. I mistakenly collected data on the cache without compiling with the correct optimization flags, which lead to a surprisingly low saturation point of approximately 450 req/sec (as seen in HW6 figures). (I will also note that the workload for that homework was slightly different: 60% GETS, 10% UPDATE, 30% DELETE.) After removing the offending flags and adding -03 and the like, there was a noticiable increase in the saturation point. 
+
+The following figure illustrates the saturation point for the pre-optimized, multithreaded cache from (approx) HW7. 
+
+UDP with 4 threads:
+![quadruply threaded udp (pre optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/4UDP_preopt_cache.png "4 threaded UDP")
+
+Here, the saturation point seems to be approximately ~650 req/sec. 
+
+
+I will also note that occasionally at high request rates, the server will occasionally abort and exit; the data set for that request rate becomes invalid (This only seems to happen on the optimized version, but I've not yet been able to pinpoint exactly what causes it). 
+
+The following three figures illustrate the performance of the optimized cache at varying request rates. Because, as Alex noted, POCO automatically multithreads the TCP server, our mulithreading only affects the UDP server. I collected data for 1, 2, and 4 threads. 
+
+UDP with 1 thread:
+![singly threaded udp (post optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/1UDP_opt_cache.png "1 threaded UDP")
+
+
+UDP with 2 threads:
+![doubly threaded udp (post optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/2UDP_opt_cache.png "2 threaded UDP")
+
+
+UDP with 4 threads:
+![quadruply threaded udp (post optimization)](https://github.com/aled1027/a_networked_cache/blob/master/data/4UDP_opt_cache.png "4 threaded UDP")
+
+
+After optimization, we note a marked improvement in the saturation point of our cache. Specifically, the saturation point for out cache with 4 UDP threads is close to 850 req/second. Given that we are working with frameworks that might introduce a lot of overhead, this improvement seems significant. 
 
 ## Step 3
 I devoted some time in optimizing performance to seeing how time is spent in a single get request.

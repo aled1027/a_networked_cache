@@ -12,6 +12,7 @@ import requests as req
 from requests_futures.sessions import FuturesSession
 from queue import Queue
 import numpy as np
+import subprocess
 
 #global constants for connecting to remote server
 HOST = '127.0.0.1'
@@ -21,8 +22,8 @@ TCP_BASE = 'http://' + HOST + ':' + TCP_PORT
 data_filename = "workload_data.tsv"
 
 #global costants for testing the cache at various "rates" 
-RATES = [50, 100, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
-SUSTAINED_FOR = 15
+RATES = [i for i in range(50, 700, 100)]
+SUSTAINED_FOR = 30
 
 #global variables for keeping track of get requests and responses
 sent_req_get = 0
@@ -31,17 +32,17 @@ recv_res_get = 0
 sent_times_get = []
 recv_times_get = []
 
-elapsed = datetime.timedelta()
-
 tcp_responses = Queue()
 
 #globals for cache set-up
 TIMEOUT = .025 #25 ms; any request taking longer than this will be counted as "lost"
-MAX_PAIRS = 250
+MAX_PAIRS_INIT = 250 #initializes the cache with #MAX_PAIRS_INIT items
 WORKLOAD_CHOICE = ["GET", "DEL", "UP"] #types of work we can do: get, delete,upd ate
-WORKLOAD_CHOICE_PROB = [.6, .3, .1] #rough probability of the type of work we're going to do
+WORKLOAD_CHOICE_PROB = [.7, 0, .3] #rough probability of the type of work we're going to do
 KEYS = []
 VALUES = []
+KEY_LEN = 8
+VAL_LEN = 16
 
 def get_time():
     return time.time()
@@ -134,7 +135,7 @@ def mixed_workload(sock, sess, rate, stop_task):
     while not stop_task.is_set():
         work_type = np.random.choice(WORKLOAD_CHOICE, 1, p=WORKLOAD_CHOICE_PROB)
         key = random.choice(KEYS)
-        val = random.choice(VALUES)
+        new_key, new_val = single_key_val_pair()
         cur_time = get_time()
         if cur_time < next_time:
             delay = next_time - cur_time
@@ -144,20 +145,29 @@ def mixed_workload(sock, sess, rate, stop_task):
         elif work_type == "DEL":
             tcp_delete(sess, key)
         else:
-            tcp_update(sess, key, val)
+            tcp_update(sess, new_key, new_val)
 
         next_time += rate_timedelta
 
-def generate_key_val(num=MAX_PAIRS):
+def single_key_val_pair():
+    global KEYS, VALUES
+    key = ''.join(random.choice(string.ascii_letters) for i in range(KEY_LEN))
+    value = ''.join(random.choice(string.ascii_letters) for i in range(VAL_LEN))
+    KEYS.append(key)
+    VALUES.append(value)
+    return key, value
+
+
+def generate_key_val(num=MAX_PAIRS_INIT):
     '''
-    generates up to MAX_PAIRS key value pairs,
+    generates up to MAX_PAIRS_INIT key value pairs,
     '''
     global KEYS, VALUES
     num_pairs = 0
-    while num_pairs < MAX_PAIRS:
-        lengths = [int(x) for x in np.random.normal(40, 10, 2)]
-        key = ''.join(random.choice(string.ascii_letters) for i in range(lengths[0]))
-        value = ''.join(random.choice(string.ascii_letters) for i in range(lengths[1]))
+    while num_pairs < MAX_PAIRS_INIT:
+        # lengths = [int(x) for x in np.random.normal(40, 10, 2)]
+        key = ''.join(random.choice(string.ascii_letters) for i in range(KEY_LEN))
+        value = ''.join(random.choice(string.ascii_letters) for i in range(VAL_LEN))
         yield key, value
         KEYS.append(key)
         VALUES.append(value)
@@ -175,9 +185,8 @@ def setup_cache():
     '''
     adds key,value pairs to the cache in anticipation of mixed_workload
     '''
-    print("********************************************")
     print("adding some key value pairs to the cache... slowly")
-    for key, value in generate_key_val(MAX_PAIRS):
+    for key, value in generate_key_val(MAX_PAIRS_INIT):
         tcp_put(key, value)
         time.sleep(.01)
         # print("adding", key, value)
@@ -187,7 +196,7 @@ def shutdown_cache():
     print("done, shutting down cache....")
     print("********************************************\n")
     resp = req.post(TCP_BASE + '/shutdown')
-    time.sleep(1) # give time for the server to setup
+    time.sleep(4) # give time for the server to setup
 
 def analyze_data(rate, filename):
     """
@@ -234,6 +243,11 @@ def analyze_data(rate, filename):
             print("oops: {}".format(e))
         except req.exceptions.Timeout as e:
             print("oops Timeout error: {}".format(e))
+            #there are no deletes, so count a timeout as a lost put request
+            if WORKLOAD_CHOICE_PROB[1] == 0:
+                lost_put += 1
+                elapsed += TIMEOUT
+
 
     if puts:
         try:
@@ -283,7 +297,6 @@ def analyze_data(rate, filename):
     print("\tGET (sent): {:6d}\t GET (recv): {:6d}\t mean GET(s): {:.6f}\t lost: {}".format(sent_req_get, recv_res_get, mean_get, lost_get))
     print("\tPUT (sent): {:6d}\t PUT (recv): {:6d}\t mean PUT(s): {:.6f}\t lost: {}".format(puts, puts-lost_put, mean_put, lost_put))
     print("\tDEL (sent): {:6d}\t DEL (recv): {:6d}\t mean DEL(s): {:.6f}\t lost: {}".format(deletes, deletes-lost_delete, mean_delete, lost_delete))
-    # analyze_tcp()
     print("lost {} responses, sleeping for a few seconds".format(lost))
 
 def task_master():
@@ -291,7 +304,7 @@ def task_master():
     goal: determine the mean response times for a given workload at a variety of rates which is sustained for SUSTAINED_FOR seconds
     '''
 
-    global sent_req_get, recv_res_get, sent_times_get, recv_times_get
+    global sent_req_get, recv_res_get, sent_times_get, recv_times_get, KEYS, VALUES, tcp_responses
 
     #create file name, open file, write header 
     nowish = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
@@ -303,15 +316,23 @@ def task_master():
                 delete_mean(sec),\t delete_sent,\t delete_received,\t lost\n")
 
     for i, rate in enumerate(RATES):
+        print("********************************************")
+        print("starting up server... ")
+        make_process = subprocess.Popen("make run_server", shell=True, close_fds=True)
+        time.sleep(5)
+
         #reset global variables
+        tcp_responses = Queue()
         sent_req_get = 0
         recv_res_get = 0
 
         sent_times_get = []
         recv_times_get = []
+        KEYS = []
+        VALUES = []
 
         try:
-            port_no = 8082 + i%10
+            port_no = 8082 + i
             host_name = "127.0.0.1"
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -336,15 +357,18 @@ def task_master():
 
             analyze_data(rate, filename)
             shutdown_cache()
-            #sleep for some time so the server can catch up
-            sleep_time = 3
-            time.sleep(sleep_time)
+        except OSError as e:
+            print("could not complete at rate: {} exception: {}".format(rate, e))
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            #raise
+        finally:
+            make_process.kill()
 
     print("done")
     sys.exit()
+
+
+
 
 
 if __name__ == '__main__':
